@@ -23,7 +23,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #endif  // XYZ_INDIRECT_CXX_14
 
 #ifndef XYZ_INDIRECT_H
-#include "indirect.h"
+#include "mutex_protected.h"
 #endif  // XYZ_INDIRECT_H
 
 #include <gtest/gtest.h>

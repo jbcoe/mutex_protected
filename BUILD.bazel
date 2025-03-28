@@ -9,9 +9,9 @@ cc_library(
 )
 
 cc_library(
-    name = "indirect",
-    srcs = ["indirect.cc"],
-    hdrs = ["indirect.h"],
+    name = "mutex_protected",
+    srcs = ["mutex_protected.cc"],
+    hdrs = ["mutex_protected.h"],
     copts = ["-Iexternal/value_types/"],
     visibility = ["//visibility:public"],
     deps = ["feature_check"],
@@ -33,113 +33,12 @@ cc_library(
 )
 
 cc_test(
-    name = "indirect_test",
+    name = "mutex_protected_test",
     size = "small",
-    srcs = ["indirect_test.cc"],
+    srcs = ["mutex_protected_test.cc"],
     deps = [
         "feature_check",
-        "indirect",
-        "tagged_allocator",
-        "test_helpers",
-        "tracking_allocator",
-        "@com_google_googletest//:gtest_main",
-    ],
-)
-
-cc_library(
-    name = "indirect_cxx14",
-    srcs = ["indirect_cxx14.cc"],
-    hdrs = ["indirect_cxx14.h"],
-    copts = ["-Iexternal/value_types/"],
-    defines = ["XYZ_INDIRECT_CXX_14"],
-    visibility = ["//visibility:public"],
-    deps = ["feature_check"],
-)
-
-cc_test(
-    name = "indirect_cxx14_test",
-    size = "small",
-    srcs = ["indirect_test.cc"],
-    copts = ["-std=c++14"],
-    deps = [
-        "feature_check",
-        "indirect_cxx14",
-        "tagged_allocator",
-        "test_helpers",
-        "tracking_allocator",
-        "@com_google_googletest//:gtest_main",
-    ],
-)
-
-cc_test(
-    name = "indirect_cxx17_test",
-    size = "small",
-    srcs = ["indirect_test.cc"],
-    copts = ["-std=c++17"],
-    deps = [
-        "feature_check",
-        "indirect_cxx14",
-        "tagged_allocator",
-        "test_helpers",
-        "tracking_allocator",
-        "@com_google_googletest//:gtest_main",
-    ],
-)
-
-cc_library(
-    name = "polymorphic",
-    srcs = ["polymorphic.cc"],
-    hdrs = ["polymorphic.h"],
-    copts = ["-Iexternal/value_types/"],
-    visibility = ["//visibility:public"],
-)
-
-cc_test(
-    name = "polymorphic_test",
-    size = "small",
-    srcs = ["polymorphic_test.cc"],
-    deps = [
-        "feature_check",
-        "polymorphic",
-        "tagged_allocator",
-        "test_helpers",
-        "tracking_allocator",
-        "@com_google_googletest//:gtest_main",
-    ],
-)
-
-cc_library(
-    name = "polymorphic_cxx14",
-    srcs = ["polymorphic_cxx14.cc"],
-    hdrs = ["polymorphic_cxx14.h"],
-    copts = ["-Iexternal/value_types/"],
-    defines = ["XYZ_POLYMORPHIC_CXX_14"],
-    visibility = ["//visibility:public"],
-)
-
-cc_test(
-    name = "polymorphic_cxx14_test",
-    size = "small",
-    srcs = ["polymorphic_test.cc"],
-    copts = ["-std=c++14"],
-    deps = [
-        "feature_check",
-        "polymorphic_cxx14",
-        "tagged_allocator",
-        "test_helpers",
-        "tracking_allocator",
-        "@com_google_googletest//:gtest_main",
-    ],
-)
-
-cc_test(
-    name = "polymorphic_cxx17_test",
-    size = "small",
-    srcs = ["polymorphic_test.cc"],
-    copts = ["-std=c++17"],
-    deps = [
-        "feature_check",
-        "polymorphic_cxx14",
+        "mutex_protected",
         "tagged_allocator",
         "test_helpers",
         "tracking_allocator",

@@ -1,7 +1,7 @@
 #include <concepts>
 #include <type_traits>
 
-#include "indirect.h"
+#include "mutex_protected.h"
 
 namespace xyz::testing {
 

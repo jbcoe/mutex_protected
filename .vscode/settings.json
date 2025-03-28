@@ -4,5 +4,19 @@
         ".venv": true,
         "bazel-*": true,
         "build": true,
+    },
+    "files.associations": {
+        "memory_resource": "cpp",
+        "array": "cpp",
+        "optional": "cpp",
+        "shared_mutex": "cpp",
+        "stop_token": "cpp",
+        "tuple": "cpp",
+        "variant": "cpp",
+        "vector": "cpp",
+        "numeric": "cpp",
+        "type_traits": "cpp",
+        "concepts": "cpp",
+        "map": "cpp"
     }
 }

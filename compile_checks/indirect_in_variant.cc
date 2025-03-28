@@ -2,7 +2,7 @@
 #include <type_traits>
 #include <variant>
 
-#include "indirect.h"
+#include "mutex_protected.h"
 
 namespace xyz::testing {
 

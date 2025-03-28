@@ -33,95 +33,22 @@ xyz_add_library(
 )
 target_sources(xyz_value_types
     INTERFACE
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/indirect.h>
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/polymorphic.h>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/mutex_protected.h>
 )
 
 xyz_add_library(
-    NAME indirect
-    ALIAS xyz_value_types::indirect
+    NAME mutex_protected
+    ALIAS xyz_value_types::mutex_protected
 )
-target_sources(indirect
+target_sources(mutex_protected
     INTERFACE
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/indirect.h>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/mutex_protected.h>
 )
 
 xyz_add_object_library(
-    NAME indirect_cc
-    FILES indirect.cc
-    LINK_LIBRARIES indirect
-)
-
-xyz_add_library(
-    NAME indirect_cxx14
-    ALIAS xyz_value_types::indirect_cxx14
-    DEFINITIONS XYZ_INDIRECT_CXX_14
-    VERSION 14
-)
-target_sources(indirect_cxx14
-    INTERFACE
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/indirect_cxx14.h>
-)
-xyz_add_object_library(
-    NAME indirect_cxx14_cc
-    FILES indirect_cxx14.cc
-    LINK_LIBRARIES indirect_cxx14
-)
-
-xyz_add_library(
-    NAME indirect_cxx17
-    ALIAS xyz_value_types::indirect_cxx17
-    DEFINITIONS XYZ_INDIRECT_CXX_14
-    VERSION 17
-)
-target_sources(indirect_cxx17
-    INTERFACE
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/indirect_cxx14.h>
-)
-
-xyz_add_library(
-    NAME polymorphic
-    ALIAS xyz_value_types::polymorphic
-)
-target_sources(polymorphic
-    INTERFACE
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/polymorphic.h>
-)
-
-xyz_add_object_library(
-    NAME polymorphic_cc
-    FILES polymorphic.cc
-    LINK_LIBRARIES polymorphic
-)
-
-xyz_add_library(
-    NAME polymorphic_cxx14
-    ALIAS xyz_value_types::polymorphic_cxx14
-    DEFINITIONS XYZ_POLYMORPHIC_CXX_14
-    VERSION 14
-)
-target_sources(polymorphic_cxx14
-    INTERFACE
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/polymorphic_cxx14.h>
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/polymorphic_cxx14.cc>
-)
-
-xyz_add_object_library(
-    NAME polymorphic_cxx14_cc
-    FILES polymorphic_cxx14.cc
-    LINK_LIBRARIES polymorphic_cxx14
-)
-
-xyz_add_library(
-    NAME polymorphic_cxx17
-    ALIAS xyz_value_types::polymorphic_cxx17
-    DEFINITIONS XYZ_POLYMORPHIC_CXX_14
-    VERSION 17
-)
-target_sources(polymorphic_cxx17
-    INTERFACE
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/polymorphic_cxx14.h>
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/polymorphic_cxx14.cc>
+    NAME mutex_protected_cc
+    FILES mutex_protected.cc
+    LINK_LIBRARIES mutex_protected
 )
 
 if (${XYZ_VALUE_TYPES_IS_NOT_SUBPROJECT})
@@ -151,43 +78,9 @@ if (${XYZ_VALUE_TYPES_IS_NOT_SUBPROJECT})
         enable_testing()
 
         xyz_add_test(
-            NAME indirect_test
-            LINK_LIBRARIES indirect
-            FILES indirect_test.cc
-        )
-
-        xyz_add_test(
-            NAME indirect_cxx14_test
-            LINK_LIBRARIES indirect_cxx14
-            FILES indirect_test.cc
-            VERSION 14
-        )
-
-        xyz_add_test(
-            NAME indirect_cxx17_test
-            LINK_LIBRARIES indirect_cxx17
-            FILES indirect_test.cc
-            VERSION 17
-        )
-
-        xyz_add_test(
-            NAME polymorphic_test
-            LINK_LIBRARIES polymorphic
-            FILES polymorphic_test.cc
-        )
-
-        xyz_add_test(
-            NAME polymorphic_cxx14_test
-            LINK_LIBRARIES polymorphic_cxx14
-            FILES polymorphic_test.cc
-            VERSION 14
-        )
-
-        xyz_add_test(
-            NAME polymorphic_cxx17_test
-            LINK_LIBRARIES polymorphic_cxx17
-            FILES polymorphic_test.cc
-            VERSION 17
+            NAME mutex_protected_test
+            LINK_LIBRARIES mutex_protected
+            FILES mutex_protected_test.cc
         )
 
         if (ENABLE_CODE_COVERAGE)
@@ -198,8 +91,7 @@ if (${XYZ_VALUE_TYPES_IS_NOT_SUBPROJECT})
 
     install(
         FILES
-            "${CMAKE_CURRENT_SOURCE_DIR}/indirect.h"
-            "${CMAKE_CURRENT_SOURCE_DIR}/polymorphic.h"
+            "${CMAKE_CURRENT_SOURCE_DIR}/mutex_protected.h"
         DESTINATION
             ${CMAKE_INSTALL_INCLUDEDIR}
     )

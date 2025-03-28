@@ -1,4 +1,4 @@
-#include "indirect.h"
+#include "mutex_protected.h"
 
 namespace xyz::testing {
 class Class {
