@@ -2,34 +2,11 @@ load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_cc//cc:cc_test.bzl", "cc_test")
 
 cc_library(
-    name = "feature_check",
-    hdrs = ["feature_check.h"],
-    copts = ["-Iexternal/value_types/"],
-    visibility = ["//visibility:public"],
-)
-
-cc_library(
     name = "mutex_protected",
     srcs = ["mutex_protected.cc"],
     hdrs = ["mutex_protected.h"],
-    copts = ["-Iexternal/value_types/"],
+    copts = ["-Iexternal/mutex_protected/"],
     visibility = ["//visibility:public"],
-    deps = ["feature_check"],
-)
-
-cc_library(
-    name = "tagged_allocator",
-    hdrs = ["tagged_allocator.h"],
-)
-
-cc_library(
-    name = "tracking_allocator",
-    hdrs = ["tracking_allocator.h"],
-)
-
-cc_library(
-    name = "test_helpers",
-    hdrs = ["test_helpers.h"],
 )
 
 cc_test(
@@ -37,11 +14,7 @@ cc_test(
     size = "small",
     srcs = ["mutex_protected_test.cc"],
     deps = [
-        "feature_check",
         "mutex_protected",
-        "tagged_allocator",
-        "test_helpers",
-        "tracking_allocator",
         "@com_google_googletest//:gtest_main",
     ],
 )
