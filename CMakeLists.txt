@@ -3,12 +3,12 @@ cmake_policy(SET CMP0127 NEW)
 cmake_policy(SET CMP0135 NEW)
 
 if(NOT DEFINED PROJECT_NAME)
-    set(XYZ_VALUE_TYPES_IS_NOT_SUBPROJECT ON)
+    set(XYZ_MUTEX_PROTECTED_IS_NOT_SUBPROJECT ON)
 endif()
 
-set(XYZ_VALUE_TYPES_VERSION 0.0.1)
+set(XYZ_MUTEX_PROTECTED_VERSION 0.0.1)
 
-project(value_types LANGUAGES CXX VERSION ${XYZ_VALUE_TYPES_VERSION})
+project(mutex_protected LANGUAGES CXX VERSION ${XYZ_MUTEX_PROTECTED_VERSION})
 
 include(CTest)
 include(FetchContent)
@@ -28,17 +28,8 @@ include(xyz_add_test)
 include(xyz_add_object_library)
 
 xyz_add_library(
-    NAME xyz_value_types
-    ALIAS xyz_value_types::value_types
-)
-target_sources(xyz_value_types
-    INTERFACE
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/mutex_protected.h>
-)
-
-xyz_add_library(
     NAME mutex_protected
-    ALIAS xyz_value_types::mutex_protected
+    ALIAS xyz_mutex_protected::mutex_protected
 )
 target_sources(mutex_protected
     INTERFACE
@@ -51,11 +42,7 @@ xyz_add_object_library(
     LINK_LIBRARIES mutex_protected
 )
 
-if (${XYZ_VALUE_TYPES_IS_NOT_SUBPROJECT})
-
-    add_subdirectory(benchmarks)
-    add_subdirectory(compile_checks)
-    add_subdirectory(exploration)
+if (${XYZ_MUTEX_PROTECTED_IS_NOT_SUBPROJECT})
 
     if (${BUILD_TESTING})
         FetchContent_Declare(
@@ -89,53 +76,4 @@ if (${XYZ_VALUE_TYPES_IS_NOT_SUBPROJECT})
 
     endif(${BUILD_TESTING})
 
-    install(
-        FILES
-            "${CMAKE_CURRENT_SOURCE_DIR}/mutex_protected.h"
-        DESTINATION
-            ${CMAKE_INSTALL_INCLUDEDIR}
-    )
-
-    install(
-        FILES
-            "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE.txt"
-        DESTINATION
-            "${CMAKE_INSTALL_DATAROOTDIR}/licenses/xyz_value_types"
-    )
-
-    install(
-        TARGETS xyz_value_types
-        EXPORT xyz_value_types-export-set
-        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-    )
-
-    install(
-        EXPORT xyz_value_types-export-set
-        NAMESPACE xyz_value_types::
-        DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/xyz_value_types"
-    )
-
-    configure_package_config_file(
-        ${CMAKE_CURRENT_LIST_DIR}/xyz_value_types-config.cmake.in
-        ${CMAKE_CURRENT_BINARY_DIR}/xyz_value_types-config.cmake
-        INSTALL_DESTINATION
-            "${CMAKE_INSTALL_LIBDIR}/cmake/xyz_value_types"
-    )
-
-    write_basic_package_version_file(
-        ${CMAKE_CURRENT_BINARY_DIR}/xyz_value_types-version.cmake
-        VERSION ${XYZ_VALUE_TYPES_VERSION}
-        COMPATIBILITY SameMajorVersion
-        ARCH_INDEPENDENT
-    )
-
-    install(
-        FILES
-            ${CMAKE_CURRENT_BINARY_DIR}/xyz_value_types-config.cmake
-            ${CMAKE_CURRENT_BINARY_DIR}/xyz_value_types-version.cmake
-        DESTINATION
-            "${CMAKE_INSTALL_LIBDIR}/cmake/xyz_value_types"
-    )
 endif()
