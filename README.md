@@ -1,4 +1,4 @@
-# Value types for composite class design
+# `mutex_protected`: A Mutex that Owns the Resource it Protects
 
 [![codecov][badge.codecov]][codecov] [![language][badge.language]][language]
 [![license][badge.license]][license] [![issues][badge.issues]][issues]
