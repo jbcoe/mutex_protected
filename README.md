@@ -25,8 +25,8 @@ It is clearly possible to do the same thing with `std::mutex` and `std::lock_gua
 but those are easy to misuse, accessing a variable without locking the mutex.
 
 The goal of this project is to push an implementation of `mutex_protected` to the
-C++ Standard Library. Similar implementations exist in 
-[Boost](https://www.boost.org/doc/libs/1_81_0/doc/html/thread/sds.html) and 
+C++ Standard Library. Similar implementations exist in
+[Boost](https://www.boost.org/doc/libs/1_81_0/doc/html/thread/sds.html) and
 [Folly](https://github.com/facebook/folly/blob/main/folly/docs/Synchronized.md).
 
 ## Use
@@ -46,9 +46,9 @@ int main() {
   std::vector<std::thread> threads;
   threads.reserve(10);
   for (int i = 0; i < 10; ++i) {
-    threads.emplace_back([&value]() { 
-      for (int j = 0; j < 10000; ++j) { 
-        *value.lock() += 1; 
+    threads.emplace_back([&value]() {
+      for (int j = 0; j < 10000; ++j) {
+        *value.lock() += 1;
       }
     });
   }

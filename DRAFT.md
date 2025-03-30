@@ -12,9 +12,9 @@ _Timo Ewalds \<<timo@ewalds.ca>\>_
 
 # Abstract
 
-We propose the addition of a new class template to the C++ Standard Library: `mutex_protected`. 
+We propose the addition of a new class template to the C++ Standard Library: `mutex_protected`.
 
-Like `mutex`, `mutex_protected` is used to protect a shared resource from concurrent access, 
+Like `mutex`, `mutex_protected` is used to protect a shared resource from concurrent access,
 however unlike `mutex`, `mutex_protected` owns the resources being protected, which makes it
 explicit what the mutex protects, and prevents accidental misuse. The type system enforces that
 the mutex is locked before any operations can be performed on the protected resource, and uses
@@ -27,10 +27,10 @@ Initial version.
 
 # Motivation
 
-The standard library provides `mutex` for protecting shared resources from concurrent access, 
+The standard library provides `mutex` for protecting shared resources from concurrent access,
 however it does not provide a way to explicitly specify what the mutex protects. This makes it
 easy to accidentally forget to lock a mutex before accessing a protected resource, especially as
-code evolves. So far this has mainly been solved by code review and 
+code evolves. So far this has mainly been solved by code review and
 [static analysis](https://clang.llvm.org/docs/ThreadSafetyAnalysis.html) tools, but it would be
 much simpler if the type system simply enforced that the mutex is locked before any operations can
 be performed on the protected resource.
@@ -51,8 +51,8 @@ We review the fundamental design requirements of `mutex_protected`.
 
 # Prior work
 
-Similar implementations exist in 
-[Boost](https://www.boost.org/doc/libs/1_81_0/doc/html/thread/sds.html) and 
+Similar implementations exist in
+[Boost](https://www.boost.org/doc/libs/1_81_0/doc/html/thread/sds.html) and
 [Folly](https://github.com/facebook/folly/blob/main/folly/docs/Synchronized.md).
 
 # Impact on the standard
@@ -79,4 +79,3 @@ for suggestions and useful discussion.
 
 _Thread Safety Analysis_\
 <https://clang.llvm.org/docs/ThreadSafetyAnalysis.html>
-
