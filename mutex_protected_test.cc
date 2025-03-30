@@ -41,7 +41,13 @@ TEST(MutexProtectedTest, InitializerListConstruction) {
   EXPECT_EQ(*value.lock(), (std::vector<int>{1, 2, 3}));
 }
 
-TEST(MutexProtectedTest, ThreadSafetyCorrectness) {
+TEST(MutexProtectedTest, UseWithToModifyInLambda) {
+  mutex_protected<int> value(0);
+  value.with([](int& v) { v++; });
+  EXPECT_EQ(*value.lock(), 1);
+}
+
+TEST(MutexProtectedTest, ThreadSafetyCorrectnessLock) {
   mutex_protected<int> value(0);
 
   std::vector<std::thread> threads;
@@ -50,6 +56,24 @@ TEST(MutexProtectedTest, ThreadSafetyCorrectness) {
     threads.emplace_back([&value]() {
       for (int j = 0; j < 10000; ++j) {
         *value.lock() += 1;
+      }
+    });
+  }
+  for (auto& thread : threads) {
+    thread.join();
+  }
+  EXPECT_EQ(*value.lock(), 100000);
+}
+
+TEST(MutexProtectedTest, ThreadSafetyCorrectnessWith) {
+  mutex_protected<int> value(0);
+
+  std::vector<std::thread> threads;
+  threads.reserve(10);
+  for (int i = 0; i < 10; ++i) {
+    threads.emplace_back([&value]() {
+      for (int j = 0; j < 10000; ++j) {
+        value.with([](int& v) { v++; });
       }
     });
   }

@@ -34,6 +34,12 @@ class mutex_protected {
 
   mutex_locked<T> lock() { return mutex_locked(mutex, &v); }
 
+  template <typename F>
+  void with(F &&f) {
+    std::lock_guard m_lock(mutex);
+    f(v);
+  }
+
  private:
   std::mutex mutex;
   T v;
