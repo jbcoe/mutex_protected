@@ -2,11 +2,31 @@
 #ifndef XYZ_MUTEX_PROTECTED_H
 #define XYZ_MUTEX_PROTECTED_H
 
+#include <concepts>
 #include <mutex>
+#include <shared_mutex>
 #include <thread>
+#include <type_traits>
 #include <utility>
 
 namespace xyz {
+
+// TODO: Does std::Mutex exist?
+// https://en.cppreference.com/w/cpp/named_req/Mutex suggests so, but I haven't
+// figured out how to reference it.
+template <typename M>
+concept Mutex = requires(M m) {
+  { m.lock() } -> std::convertible_to<void>;
+  { m.unlock() } -> std::convertible_to<void>;
+  std::is_constructible_v<std::unique_lock<M>, M>;
+};
+
+// TODO: Does std::SharedMutex exist?
+template <typename M>
+concept SharedMutex = Mutex<M> && requires(M m) {
+  { m.lock_shared() } -> std::convertible_to<void>;
+};
+
 template <class T, class G>
 class [[nodiscard]] mutex_locked {
  public:
@@ -36,11 +56,11 @@ class [[nodiscard]] mutex_locked {
   T *v;
   G guard;
 
-  template <class T_>
+  template <class T_, Mutex M_>
   friend class mutex_protected;
 };
 
-template <class T>
+template <class T, Mutex M = std::mutex>
 class mutex_protected {
  public:
   template <typename... Args>
@@ -48,13 +68,12 @@ class mutex_protected {
 
   mutex_protected(const T &v_) : mutex{}, v(v_) {}
 
-  mutex_locked<T, std::lock_guard<std::mutex>> lock() {
-    return mutex_locked<T, std::lock_guard<std::mutex>>(&v, mutex);
+  mutex_locked<T, std::lock_guard<M>> lock() {
+    return mutex_locked<T, std::lock_guard<M>>(&v, mutex);
   }
 
-  mutex_locked<T, std::unique_lock<std::mutex>> try_lock() {
-    return mutex_locked<T, std::unique_lock<std::mutex>>(&v, mutex,
-                                                         std::try_to_lock);
+  mutex_locked<T, std::unique_lock<M>> try_lock() {
+    return mutex_locked<T, std::unique_lock<M>>(&v, mutex, std::try_to_lock);
   }
 
   template <typename F>
@@ -74,8 +93,42 @@ class mutex_protected {
     }
   }
 
+  mutex_locked<const T, std::shared_lock<M>> lock_shared()
+    requires SharedMutex<M>
+  {
+    return mutex_locked<const T, std::shared_lock<M>>(&v, mutex);
+  }
+
+  mutex_locked<const T, std::shared_lock<M>> try_lock_shared()
+    requires SharedMutex<M>
+  {
+    return mutex_locked<const T, std::shared_lock<M>>(&v, mutex,
+                                                      std::try_to_lock);
+  }
+
+  template <typename F>
+  void with_shared(F &&f)
+    requires SharedMutex<M>
+  {
+    std::shared_lock m_lock(mutex);
+    f(static_cast<const T &>(v));
+  }
+
+  template <typename F>
+  [[nodiscard]] bool try_with_shared(F &&f)
+    requires SharedMutex<M>
+  {
+    std::shared_lock m_lock(mutex, std::try_to_lock);
+    if (m_lock.owns_lock()) {
+      f(static_cast<const T &>(v));
+      return true;
+    } else {
+      return false;
+    }
+  }
+
  private:
-  std::mutex mutex;
+  M mutex;
   T v;
 };
 }  // namespace xyz

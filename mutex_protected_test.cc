@@ -8,25 +8,34 @@
 
 namespace xyz {
 
-TEST(MutexProtectedTest, InitializedConstruction) {
-  mutex_protected<int> value(0);
+template <typename T>
+class MutexProtectedTest : public testing::Test {};
+
+using AllMutexes =
+    ::testing::Types<std::mutex, std::timed_mutex, std::recursive_mutex,
+                     std::recursive_timed_mutex, std::shared_mutex,
+                     std::shared_timed_mutex>;
+TYPED_TEST_SUITE(MutexProtectedTest, AllMutexes);
+
+TYPED_TEST(MutexProtectedTest, InitializedConstruction) {
+  mutex_protected<int, TypeParam> value(0);
   EXPECT_EQ(*value.lock(), 0);
 }
 
-TEST(MutexProtectedTest, DefaultConstruction) {
-  mutex_protected<std::string> value;
+TYPED_TEST(MutexProtectedTest, DefaultConstruction) {
+  mutex_protected<std::string, TypeParam> value;
   EXPECT_EQ(*value.lock(), "");
 }
 
-TEST(MutexProtectedTest, StringConstruction) {
-  mutex_protected<std::string> value("hello");
+TYPED_TEST(MutexProtectedTest, StringConstruction) {
+  mutex_protected<std::string, TypeParam> value("hello");
   *value.lock() += " world";
   EXPECT_EQ(*value.lock(), "hello world");
   EXPECT_EQ(value.lock()->substr(6), "world");
 }
 
-TEST(MutexProtectedTest, DefaultVectorConstruction) {
-  mutex_protected<std::vector<int>> value;
+TYPED_TEST(MutexProtectedTest, DefaultVectorConstruction) {
+  mutex_protected<std::vector<int>, TypeParam> value;
   {
     auto locked = value.lock();
     locked->push_back(1);
@@ -36,19 +45,19 @@ TEST(MutexProtectedTest, DefaultVectorConstruction) {
   EXPECT_EQ(*value.lock(), (std::vector<int>{1, 2, 3}));
 }
 
-TEST(MutexProtectedTest, InitializerListConstruction) {
-  mutex_protected<std::vector<int>> value{{1, 2, 3}};
+TYPED_TEST(MutexProtectedTest, InitializerListConstruction) {
+  mutex_protected<std::vector<int>, TypeParam> value{{1, 2, 3}};
   EXPECT_EQ(*value.lock(), (std::vector<int>{1, 2, 3}));
 }
 
-TEST(MutexProtectedTest, ProtectStruct) {
+TYPED_TEST(MutexProtectedTest, ProtectStruct) {
   struct MyStruct {
     int i;
     bool b;
     std::string s;
   };
 
-  mutex_protected<MyStruct> value{{1, true, "hello"}};
+  mutex_protected<MyStruct, TypeParam> value{{1, true, "hello"}};
 
   EXPECT_EQ(value.lock()->i, 1);
   EXPECT_EQ(value.lock()->b, true);
@@ -66,14 +75,14 @@ TEST(MutexProtectedTest, ProtectStruct) {
   EXPECT_EQ(value.lock()->s, "hello world");
 }
 
-TEST(MutexProtectedTest, UseWithToModifyInLambda) {
-  mutex_protected<int> value(0);
+TYPED_TEST(MutexProtectedTest, UseWithToModifyInLambda) {
+  mutex_protected<int, TypeParam> value(0);
   value.with([](int& v) { v++; });
   EXPECT_EQ(*value.lock(), 1);
 }
 
-TEST(MutexProtectedTest, TryLockGetsLockWithoutContention) {
-  mutex_protected<int> value(0);
+TYPED_TEST(MutexProtectedTest, TryLockGetsLockWithoutContention) {
+  mutex_protected<int, TypeParam> value(0);
 
   {
     auto locked = value.try_lock();
@@ -84,8 +93,8 @@ TEST(MutexProtectedTest, TryLockGetsLockWithoutContention) {
   EXPECT_EQ(*value.lock(), 1);
 }
 
-TEST(MutexProtectedTest, TryLockFailsIfLocked) {
-  mutex_protected<int> value(0);
+TYPED_TEST(MutexProtectedTest, TryLockFailsIfLocked) {
+  mutex_protected<int, TypeParam> value(0);
 
   auto locked = value.lock();
   std::thread t([&value]() {
@@ -96,14 +105,14 @@ TEST(MutexProtectedTest, TryLockFailsIfLocked) {
   t.join();
 }
 
-TEST(MutexProtectedTest, UseTryWithToModifyInLambda) {
-  mutex_protected<int> value(0);
+TYPED_TEST(MutexProtectedTest, UseTryWithToModifyInLambda) {
+  mutex_protected<int, TypeParam> value(0);
   EXPECT_TRUE(value.try_with([](int& v) { v++; }));
   EXPECT_EQ(*value.lock(), 1);
 }
 
-TEST(MutexProtectedTest, TryWithFailsIfLocked) {
-  mutex_protected<int> value(0);
+TYPED_TEST(MutexProtectedTest, TryWithFailsIfLocked) {
+  mutex_protected<int, TypeParam> value(0);
   {
     auto locked = value.lock();
     std::thread t(
@@ -113,8 +122,8 @@ TEST(MutexProtectedTest, TryWithFailsIfLocked) {
   EXPECT_EQ(*value.lock(), 0);
 }
 
-TEST(MutexProtectedTest, ThreadSafetyCorrectnessLock) {
-  mutex_protected<int> value(0);
+TYPED_TEST(MutexProtectedTest, ThreadSafetyCorrectnessLock) {
+  mutex_protected<int, TypeParam> value(0);
 
   std::vector<std::thread> threads;
   threads.reserve(10);
@@ -131,8 +140,8 @@ TEST(MutexProtectedTest, ThreadSafetyCorrectnessLock) {
   EXPECT_EQ(*value.lock(), 100000);
 }
 
-TEST(MutexProtectedTest, ThreadSafetyCorrectnessWith) {
-  mutex_protected<int> value(0);
+TYPED_TEST(MutexProtectedTest, ThreadSafetyCorrectnessWith) {
+  mutex_protected<int, TypeParam> value(0);
 
   std::vector<std::thread> threads;
   threads.reserve(10);
@@ -147,6 +156,108 @@ TEST(MutexProtectedTest, ThreadSafetyCorrectnessWith) {
     thread.join();
   }
   EXPECT_EQ(*value.lock(), 100000);
+}
+
+template <typename T>
+class SharedMutexProtectedTest : public testing::Test {};
+
+using SharedMutexes =
+    ::testing::Types<std::shared_mutex, std::shared_timed_mutex>;
+TYPED_TEST_SUITE(SharedMutexProtectedTest, SharedMutexes);
+
+TYPED_TEST(SharedMutexProtectedTest, SharedLockIsConst) {
+  mutex_protected<int, TypeParam> value(0);
+
+  {
+    auto locked = value.lock_shared();
+    static_assert(std::is_const_v<std::remove_reference_t<decltype(*locked)>>);
+  }
+  {
+    auto locked = value.try_lock_shared();
+    static_assert(std::is_const_v<std::remove_reference_t<decltype(*locked)>>);
+  }
+  {
+    value.with_shared([](auto& v) {
+      static_assert(std::is_const_v<std::remove_reference_t<decltype(v)>>);
+    });
+  }
+  {
+    ASSERT_TRUE(value.try_with_shared([](auto& v) {
+      static_assert(std::is_const_v<std::remove_reference_t<decltype(v)>>);
+    }));
+  }
+}
+
+TYPED_TEST(SharedMutexProtectedTest, TwoSharedLockSucceeds) {
+  mutex_protected<int, TypeParam> value(0);
+
+  auto locked = value.lock_shared();
+  std::thread t([&value]() {
+    auto locked = value.try_lock_shared();
+    EXPECT_TRUE(locked.owns_lock());
+    EXPECT_TRUE(locked);
+  });
+  t.join();
+}
+
+TYPED_TEST(SharedMutexProtectedTest, LockThenSharedFails) {
+  mutex_protected<int, TypeParam> value(0);
+
+  auto locked = value.lock();
+  std::thread t([&value]() {
+    auto locked = value.try_lock_shared();
+    EXPECT_FALSE(locked.owns_lock());
+    EXPECT_FALSE(locked);
+  });
+  t.join();
+}
+
+TYPED_TEST(SharedMutexProtectedTest, SharedThenLockFails) {
+  mutex_protected<int, TypeParam> value(0);
+
+  auto locked = value.lock_shared();
+  std::thread t([&value]() {
+    auto locked = value.try_lock();
+    EXPECT_FALSE(locked.owns_lock());
+    EXPECT_FALSE(locked);
+  });
+  t.join();
+}
+
+TYPED_TEST(SharedMutexProtectedTest, ThreadSafetyCorrectness) {
+  mutex_protected<int, TypeParam> value(0);
+
+  const int readers = 10;
+  const int writers = 10;
+  const int iters = 10000;
+
+  std::vector<std::thread> threads;
+  threads.reserve(readers + writers);
+  for (int i = 0; i < writers; ++i) {
+    threads.emplace_back([&value]() {
+      for (int j = 0; j < iters; ++j) {
+        *value.lock() += 1;
+      }
+    });
+  }
+  mutex_protected<long long> grand_total = 0;
+  for (int i = 0; i < readers; ++i) {
+    threads.emplace_back([&value, &grand_total]() {
+      int sum = 0;
+      for (int j = 0; j < iters; ++j) {
+        sum += *value.lock_shared();
+      }
+      *grand_total.lock() += sum;
+    });
+  }
+  for (auto& thread : threads) {
+    thread.join();
+  }
+  EXPECT_EQ(*value.lock(), writers * iters);
+
+  // Make sure the readers weren't optimized away, and didn't all get the final
+  // value.
+  EXPECT_LT(*grand_total.lock(), (long long)readers * writers * iters * iters);
 }
 
 }  // namespace xyz
