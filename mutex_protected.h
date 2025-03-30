@@ -2,6 +2,7 @@
 #ifndef XYZ_MUTEX_PROTECTED_H
 #define XYZ_MUTEX_PROTECTED_H
 
+#include <optional>
 #include <thread>
 #include <utility>
 
@@ -33,6 +34,14 @@ class mutex_protected {
   mutex_protected(const T &v_) : mutex{}, v(v_) {}
 
   mutex_locked<T> lock() { return mutex_locked(mutex, &v); }
+
+  std::optional<mutex_locked<T>> try_lock() {
+    if (mutex.try_lock()) {
+      return mutex_locked(mutex, &v);
+    } else {
+      return std::nullopt;
+    }
+  }
 
   template <typename F>
   void with(F &&f) {

@@ -1,5 +1,6 @@
 #include "mutex_protected.h"
 
+#include <optional>
 #include <string>
 #include <thread>
 #include <vector>
@@ -64,6 +65,30 @@ TEST(MutexProtectedTest, ProtectStruct) {
   EXPECT_EQ(value.lock()->i, 42);
   EXPECT_EQ(value.lock()->b, false);
   EXPECT_EQ(value.lock()->s, "hello world");
+}
+
+TEST(MutexProtectedTest, TryLockGetsLockWithoutContention) {
+  mutex_protected<int> value(0);
+
+  {
+    std::optional<mutex_locked<int>> locked = value.try_lock();
+    EXPECT_TRUE(locked.has_value());
+    **locked += 1;
+  }
+  EXPECT_EQ(*value.lock(), 1);
+}
+
+TEST(MutexProtectedTest, TryLockFailsIfLocked) {
+  mutex_protected<int> value(0);
+
+  auto locked = value.lock();
+  int thread_locked = -1;
+  std::thread t([&value, &thread_locked]() {
+    std::optional<mutex_locked<int>> locked = value.try_lock();
+    thread_locked = locked.has_value() ? 1 : 0;
+  });
+  t.join();
+  EXPECT_EQ(thread_locked, 0);
 }
 
 TEST(MutexProtectedTest, UseWithToModifyInLambda) {
