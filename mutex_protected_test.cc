@@ -41,6 +41,31 @@ TEST(MutexProtectedTest, InitializerListConstruction) {
   EXPECT_EQ(*value.lock(), (std::vector<int>{1, 2, 3}));
 }
 
+TEST(MutexProtectedTest, ProtectStruct) {
+  struct MyStruct {
+    int i;
+    bool b;
+    std::string s;
+  };
+
+  mutex_protected<MyStruct> value{{1, true, "hello"}};
+
+  EXPECT_EQ(value.lock()->i, 1);
+  EXPECT_EQ(value.lock()->b, true);
+  EXPECT_EQ(value.lock()->s, "hello");
+
+  value.lock()->i = 42;
+  {
+    auto locked = value.lock();
+    locked->b = false;
+    locked->s += " world";
+  }
+
+  EXPECT_EQ(value.lock()->i, 42);
+  EXPECT_EQ(value.lock()->b, false);
+  EXPECT_EQ(value.lock()->s, "hello world");
+}
+
 TEST(MutexProtectedTest, UseWithToModifyInLambda) {
   mutex_protected<int> value(0);
   value.with([](int& v) { v++; });
