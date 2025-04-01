@@ -72,6 +72,47 @@ TEST(MutexProtectedTest, UseWithToModifyInLambda) {
   EXPECT_EQ(*value.lock(), 1);
 }
 
+TEST(MutexProtectedTest, TryLockGetsLockWithoutContention) {
+  mutex_protected<int> value(0);
+
+  {
+    auto locked = value.try_lock();
+    EXPECT_TRUE(locked.owns_lock());
+    EXPECT_TRUE(locked);
+    *locked += 1;
+  }
+  EXPECT_EQ(*value.lock(), 1);
+}
+
+TEST(MutexProtectedTest, TryLockFailsIfLocked) {
+  mutex_protected<int> value(0);
+
+  auto locked = value.lock();
+  std::thread t([&value]() {
+    auto locked = value.try_lock();
+    EXPECT_FALSE(locked.owns_lock());
+    EXPECT_FALSE(locked);
+  });
+  t.join();
+}
+
+TEST(MutexProtectedTest, UseTryWithToModifyInLambda) {
+  mutex_protected<int> value(0);
+  EXPECT_TRUE(value.try_with([](int& v) { v++; }));
+  EXPECT_EQ(*value.lock(), 1);
+}
+
+TEST(MutexProtectedTest, TryWithFailsIfLocked) {
+  mutex_protected<int> value(0);
+  {
+    auto locked = value.lock();
+    std::thread t(
+        [&value]() { EXPECT_FALSE(value.try_with([](int& v) { v++; })); });
+    t.join();
+  }
+  EXPECT_EQ(*value.lock(), 0);
+}
+
 TEST(MutexProtectedTest, ThreadSafetyCorrectnessLock) {
   mutex_protected<int> value(0);
 
