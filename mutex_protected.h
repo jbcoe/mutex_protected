@@ -53,8 +53,8 @@ class mutex_protected {
   }
 
   mutex_locked<T, std::unique_lock<std::mutex>> try_lock() {
-    return mutex_locked<T, std::unique_lock<std::mutex>>(
-        &v, mutex,std::try_to_lock);
+    return mutex_locked<T, std::unique_lock<std::mutex>>(&v, mutex,
+                                                         std::try_to_lock);
   }
 
   template <typename F>

@@ -106,9 +106,8 @@ TEST(MutexProtectedTest, TryWithFailsIfLocked) {
   mutex_protected<int> value(0);
   {
     auto locked = value.lock();
-    std::thread t([&value]() {
-      EXPECT_FALSE(value.try_with([](int& v) { v++; }));
-    });
+    std::thread t(
+        [&value]() { EXPECT_FALSE(value.try_with([](int& v) { v++; })); });
     t.join();
   }
   EXPECT_EQ(*value.lock(), 0);
