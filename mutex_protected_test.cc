@@ -1,6 +1,5 @@
 #include "mutex_protected.h"
 
-#include <optional>
 #include <string>
 #include <thread>
 #include <vector>
@@ -67,13 +66,20 @@ TEST(MutexProtectedTest, ProtectStruct) {
   EXPECT_EQ(value.lock()->s, "hello world");
 }
 
+TEST(MutexProtectedTest, UseWithToModifyInLambda) {
+  mutex_protected<int> value(0);
+  value.with([](int& v) { v++; });
+  EXPECT_EQ(*value.lock(), 1);
+}
+
 TEST(MutexProtectedTest, TryLockGetsLockWithoutContention) {
   mutex_protected<int> value(0);
 
   {
-    std::optional<mutex_locked<int>> locked = value.try_lock();
-    EXPECT_TRUE(locked.has_value());
-    **locked += 1;
+    auto locked = value.try_lock();
+    EXPECT_TRUE(locked.owns_lock());
+    EXPECT_TRUE(locked);
+    *locked += 1;
   }
   EXPECT_EQ(*value.lock(), 1);
 }
@@ -82,19 +88,30 @@ TEST(MutexProtectedTest, TryLockFailsIfLocked) {
   mutex_protected<int> value(0);
 
   auto locked = value.lock();
-  int thread_locked = -1;
-  std::thread t([&value, &thread_locked]() {
-    std::optional<mutex_locked<int>> locked = value.try_lock();
-    thread_locked = locked.has_value() ? 1 : 0;
+  std::thread t([&value]() {
+    auto locked = value.try_lock();
+    EXPECT_FALSE(locked.owns_lock());
+    EXPECT_FALSE(locked);
   });
   t.join();
-  EXPECT_EQ(thread_locked, 0);
 }
 
-TEST(MutexProtectedTest, UseWithToModifyInLambda) {
+TEST(MutexProtectedTest, UseTryWithToModifyInLambda) {
   mutex_protected<int> value(0);
-  value.with([](int& v) { v++; });
+  EXPECT_TRUE(value.try_with([](int& v) { v++; }));
   EXPECT_EQ(*value.lock(), 1);
+}
+
+TEST(MutexProtectedTest, TryWithFailsIfLocked) {
+  mutex_protected<int> value(0);
+  {
+    auto locked = value.lock();
+    std::thread t([&value]() {
+      EXPECT_FALSE(value.try_with([](int& v) { v++; }));
+    });
+    t.join();
+  }
+  EXPECT_EQ(*value.lock(), 0);
 }
 
 TEST(MutexProtectedTest, ThreadSafetyCorrectnessLock) {
