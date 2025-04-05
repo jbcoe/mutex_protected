@@ -5,20 +5,18 @@ on:
     - cron: "0 1 * * *"
   push:
     branches: [main]
-    paths-ignore:
-      - CODEOWNERS
-      - requirements.txt
-      - LICENSE.txt
-      - .pre-commit-config.yaml
-      - '**/*.md'
+    paths:
+      - "**/*.cc"
+      - "**/*.h"
+      - "**/CMakeLists.txt"
+      - .github/workflows/clang-tidy.yml # This file
   pull_request:
     branches: [main]
-    paths-ignore:
-      - CODEOWNERS
-      - requirements.txt
-      - LICENSE.txt
-      - .pre-commit-config.yaml
-      - '**/*.md'
+    paths:
+      - "**/*.cc"
+      - "**/*.h"
+      - "**/CMakeLists.txt"
+      - .github/workflows/clang-tidy.yml # This file
 
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
