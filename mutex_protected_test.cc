@@ -143,6 +143,7 @@ TYPED_TEST(MutexProtectedTest, ThreadSafetyCorrectnessLock) {
 // LCOV_EXCL_START
 // This test causes issues with negative line-count for lcov.
 // It is not a problem with the code, but with lcov.
+
 TYPED_TEST(MutexProtectedTest, ThreadSafetyCorrectnessWith) {
   mutex_protected<int, TypeParam> value(0);
 
@@ -160,7 +161,9 @@ TYPED_TEST(MutexProtectedTest, ThreadSafetyCorrectnessWith) {
   }
   EXPECT_EQ(*value.lock(), 100000);
 }
+
 // LCOV_EXCL_STOP
+
 template <typename T>
 class SharedMutexProtectedTest : public testing::Test {};
 
