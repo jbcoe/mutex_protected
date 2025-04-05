@@ -36,12 +36,15 @@ jobs:
       - uses: actions/checkout@v3
       - uses: seanmiddleditch/gha-setup-ninja@master
 
+      - name: Install the latest version of uv.
+        uses: astral-sh/setup-uv@v5
+
       - name: Configure CMake # We need `compile_commands.json` to be generated.
         run: cmake --preset Release
 
       - name: clang-tidy
         run: |
-            python scripts/reduce_compile_commands.py build/compile_commands.json > compile_commands.json
+            uv run scripts/reduce_compile_commands.py build/compile_commands.json > compile_commands.json
             PROJECT_SOURCE_FILES="$(python scripts/reduce_compile_commands.py build/compile_commands.json \
                 --names-only \
                 --exclude_dirs build exploration compile_checks benchmarks)"
