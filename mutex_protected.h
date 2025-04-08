@@ -60,7 +60,7 @@ class [[nodiscard]] mutex_locked {
     return g.owns_lock();
   }
 
-  // Needed so that the lock guard can be used in a condition variable.
+  // Needed for use with `std::condition_variable`.
   G &guard() noexcept
     requires std::is_same_v<G, std::unique_lock<std::mutex>>
   {
@@ -74,6 +74,14 @@ class [[nodiscard]] mutex_locked {
   mutex_locked(mutex_locked &&m) noexcept
     requires std::move_constructible<G>
       : v(std::exchange(m.v, nullptr)), guard(std::move(m.guard)) {}
+
+  // Needed for use with `std::condition_variable_any`, ie if you are using a
+  // different mutex type.
+  mutex_type *mutex() noexcept
+    requires std::is_member_function_pointer_v<decltype(&G::mutex)>
+  {
+    return g.mutex();
+  }
 
  private:
   template <typename... Args>

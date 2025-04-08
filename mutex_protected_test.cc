@@ -449,6 +449,7 @@ TEST(CondVarMutexProtectedTest, ConditionVariableWorks) {
     });
   }
 
+  std::this_thread::sleep_for(5ms);
   int expected_total = 0;
   for (int i = 0; i < items; ++i) {
     inputs.with([&i](auto& in_q) { in_q.push(i); });
@@ -471,6 +472,30 @@ TEST(CondVarMutexProtectedTest, ConditionVariableWorks) {
   }
 
   EXPECT_EQ(total, expected_total);
+}
+
+TEST(CondVarMutexProtectedTest, ConditionVariableAnyWorks) {
+  mutex_protected<int, std::shared_mutex> data = 0;
+  std::condition_variable_any cv;
+
+  const int thread_count = 2;
+
+  std::vector<std::thread> threads;
+  threads.reserve(thread_count);
+  for (int i = 0; i < thread_count; ++i) {
+    threads.emplace_back([&]() {
+      auto locked = data.lock_shared();
+      cv.wait(*locked.mutex(), [&locked]() { return *locked > 0; });
+      EXPECT_EQ(*locked, 1);
+    });
+  }
+
+  std::this_thread::sleep_for(5ms);
+  *data.lock() = 1;
+  cv.notify_all();
+  for (auto& thread : threads) {
+    thread.join();
+  }
 }
 
 }  // namespace xyz
