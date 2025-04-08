@@ -78,14 +78,14 @@ class mutex_protected {
 
   template <typename F>
   void with(F &&f) {
-    std::lock_guard m_lock(mutex);
+    std::lock_guard guard(mutex);
     f(v);
   }
 
   template <typename F>
   [[nodiscard]] bool try_with(F &&f) {
-    std::unique_lock m_lock(mutex, std::try_to_lock);
-    if (m_lock.owns_lock()) {
+    std::unique_lock guard(mutex, std::try_to_lock);
+    if (guard.owns_lock()) {
       f(v);
       return true;
     } else {
@@ -110,7 +110,7 @@ class mutex_protected {
   void with_shared(F &&f)
     requires SharedMutex<M>
   {
-    std::shared_lock m_lock(mutex);
+    std::shared_lock guard(mutex);
     f(static_cast<const T &>(v));
   }
 
@@ -118,8 +118,8 @@ class mutex_protected {
   [[nodiscard]] bool try_with_shared(F &&f)
     requires SharedMutex<M>
   {
-    std::shared_lock m_lock(mutex, std::try_to_lock);
-    if (m_lock.owns_lock()) {
+    std::shared_lock guard(mutex, std::try_to_lock);
+    if (guard.owns_lock()) {
       f(static_cast<const T &>(v));
       return true;
     } else {
