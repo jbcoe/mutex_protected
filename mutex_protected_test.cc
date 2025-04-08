@@ -199,6 +199,7 @@ TYPED_TEST(SharedMutexProtectedTest, TwoSharedLockSucceeds) {
 
   auto locked = value.lock_shared();
   std::thread t([&value]() {
+    EXPECT_TRUE(value.try_with_shared([](const int& v) { EXPECT_EQ(v, 0); }));
     auto locked = value.try_lock_shared();
     EXPECT_TRUE(locked.owns_lock());
     EXPECT_TRUE(locked);
@@ -211,6 +212,7 @@ TYPED_TEST(SharedMutexProtectedTest, LockThenSharedFails) {
 
   auto locked = value.lock();
   std::thread t([&value]() {
+    EXPECT_FALSE(value.try_with_shared([](const int& v) { EXPECT_EQ(v, 0); }));
     auto locked = value.try_lock_shared();
     EXPECT_FALSE(locked.owns_lock());
     EXPECT_FALSE(locked);
@@ -223,6 +225,7 @@ TYPED_TEST(SharedMutexProtectedTest, SharedThenLockFails) {
 
   auto locked = value.lock_shared();
   std::thread t([&value]() {
+    EXPECT_FALSE(value.try_with([](int& v) { EXPECT_EQ(v, 0); }));
     auto locked = value.try_lock();
     EXPECT_FALSE(locked.owns_lock());
     EXPECT_FALSE(locked);
