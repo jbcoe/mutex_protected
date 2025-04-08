@@ -1,10 +1,14 @@
 #include "mutex_protected.h"
 
+#include <chrono>
 #include <string>
 #include <thread>
 #include <vector>
 
 #include "gtest/gtest.h"
+
+using namespace std::chrono_literals;
+auto now = std::chrono::system_clock::now;
 
 namespace xyz {
 
@@ -272,6 +276,126 @@ TYPED_TEST(SharedMutexProtectedTest, ThreadSafetyCorrectness) {
   // Hopefully this stops things from being optimized away, but I don't see how
   // this could fail.
   EXPECT_LE(*grand_total.lock(), (long long)readers * writers * iters * iters);
+}
+
+template <typename T>
+class TimedMutexProtectedTest : public testing::Test {};
+
+using TimedMutexes =
+    ::testing::Types<std::timed_mutex, std::recursive_timed_mutex,
+                     std::shared_timed_mutex>;
+TYPED_TEST_SUITE(TimedMutexProtectedTest, TimedMutexes);
+
+TYPED_TEST(TimedMutexProtectedTest, TimeoutWorksCorrectly) {
+  mutex_protected<int, TypeParam> value(1);
+
+  int out = 0;
+  {
+    auto locked = value.try_lock_until(now() + 1ms);
+    ASSERT_TRUE(locked.owns_lock());
+    out += *locked;
+  }
+  {
+    auto locked = value.try_lock_for(1ms);
+    ASSERT_TRUE(locked.owns_lock());
+    out += *locked;
+  }
+  {
+    ASSERT_TRUE(
+        value.try_with_until(now() + 1ms, [&out](auto& v) { out += v; }));
+  }
+  {
+    ASSERT_TRUE(value.try_with_for(1ms, [&out](auto& v) { out += v; }));
+  }
+  auto write_locked = value.lock();
+  std::thread t([&value, &out]() {
+    {
+      auto locked = value.try_lock_until(now() + 1ms);
+      ASSERT_FALSE(locked.owns_lock());
+    }
+    {
+      auto locked = value.try_lock_for(1ms);
+      ASSERT_FALSE(locked.owns_lock());
+    }
+    {
+      ASSERT_FALSE(
+          value.try_with_until(now() + 1ms, [&out](auto& v) { out += v; }));
+    }
+    {
+      ASSERT_FALSE(value.try_with_for(1ms, [&out](auto& v) { out += v; }));
+    }
+  });
+  t.join();
+  EXPECT_EQ(out, 4);
+  EXPECT_EQ(*write_locked, 1);
+}
+
+TEST(SharedTimedMutexProtectedTest, SharedLockIsConst) {
+  mutex_protected<int, std::shared_timed_mutex> value(0);
+
+  {
+    auto locked = value.try_lock_shared_until(now() + 1ms);
+    static_assert(std::is_const_v<std::remove_reference_t<decltype(*locked)>>);
+  }
+  {
+    auto locked = value.try_lock_shared_for(1ms);
+    static_assert(std::is_const_v<std::remove_reference_t<decltype(*locked)>>);
+  }
+  {
+    ASSERT_TRUE(value.try_with_shared_until(now() + 1ms, [](auto& v) {
+      static_assert(std::is_const_v<std::remove_reference_t<decltype(v)>>);
+    }));
+  }
+  {
+    ASSERT_TRUE(value.try_with_shared_for(1ms, [](auto& v) {
+      static_assert(std::is_const_v<std::remove_reference_t<decltype(v)>>);
+    }));
+  }
+}
+
+TEST(SharedTimedMutexProtectedTest, TimeoutWorksCorrectly) {
+  mutex_protected<int, std::shared_timed_mutex> value(1);
+
+  int out = 0;
+  {
+    auto locked = value.try_lock_shared_until(now() + 1ms);
+    ASSERT_TRUE(locked.owns_lock());
+    out += *locked;
+  }
+  {
+    auto locked = value.try_lock_shared_for(1ms);
+    ASSERT_TRUE(locked.owns_lock());
+    out += *locked;
+  }
+  {
+    ASSERT_TRUE(value.try_with_shared_until(now() + 1ms,
+                                            [&out](auto& v) { out += v; }));
+  }
+  {
+    ASSERT_TRUE(value.try_with_shared_for(1ms, [&out](auto& v) { out += v; }));
+  }
+  auto write_locked = value.lock();
+  std::thread t([&value, &out]() {
+    {
+      auto locked = value.try_lock_shared_until(now() + 1ms);
+      ASSERT_FALSE(locked.owns_lock());
+    }
+    {
+      auto locked = value.try_lock_shared_for(1ms);
+      ASSERT_FALSE(locked.owns_lock());
+    }
+    {
+      ASSERT_FALSE(value.try_with_shared_until(now() + 1ms,
+                                               [&out](auto& v) { out += v; }));
+    }
+    {
+      ASSERT_FALSE(
+          value.try_with_shared_for(1ms, [&out](auto& v) { out += v; }));
+    }
+  });
+  t.join();
+  EXPECT_EQ(out, 4);
+  EXPECT_EQ(*write_locked, 1);
 }
 
 }  // namespace xyz

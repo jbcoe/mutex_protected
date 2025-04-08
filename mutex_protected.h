@@ -1,7 +1,7 @@
-
 #ifndef XYZ_MUTEX_PROTECTED_H
 #define XYZ_MUTEX_PROTECTED_H
 
+#include <chrono>
 #include <concepts>
 #include <mutex>
 #include <shared_mutex>
@@ -25,6 +25,16 @@ concept Mutex = requires(M m) {
 template <typename M>
 concept SharedMutex = Mutex<M> && requires(M m) {
   { m.lock_shared() } -> std::convertible_to<void>;
+};
+
+// TODO: Does std::TimedMutex exist?
+template <typename M>
+concept TimedMutex = Mutex<M> && requires(M m) {
+  { m.try_lock_for(std::chrono::milliseconds(1)) } -> std::convertible_to<bool>;
+  {
+    m.try_lock_until(std::chrono::system_clock::now() +
+                     std::chrono::milliseconds(1))
+  } -> std::convertible_to<bool>;
 };
 
 template <class T, class G>
@@ -76,6 +86,22 @@ class mutex_protected {
     return mutex_locked<T, std::unique_lock<M>>(&v, mutex, std::try_to_lock);
   }
 
+  template <class Clock, class Duration>
+  mutex_locked<T, std::unique_lock<M>> try_lock_until(
+      const std::chrono::time_point<Clock, Duration> &timeout_time)
+    requires TimedMutex<M>
+  {
+    return mutex_locked<T, std::unique_lock<M>>(&v, mutex, timeout_time);
+  }
+
+  template <class Rep, class Period>
+  mutex_locked<T, std::unique_lock<M>> try_lock_for(
+      const std::chrono::duration<Rep, Period> &timeout_duration)
+    requires TimedMutex<M>
+  {
+    return mutex_locked<T, std::unique_lock<M>>(&v, mutex, timeout_duration);
+  }
+
   template <typename F>
   void with(F &&f) {
     std::lock_guard guard(mutex);
@@ -85,6 +111,34 @@ class mutex_protected {
   template <typename F>
   [[nodiscard]] bool try_with(F &&f) {
     std::unique_lock guard(mutex, std::try_to_lock);
+    if (guard.owns_lock()) {
+      f(v);
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  template <class Clock, class Duration, typename F>
+  [[nodiscard]] bool try_with_until(
+      const std::chrono::time_point<Clock, Duration> &timeout_time, F &&f)
+    requires TimedMutex<M>
+  {
+    std::unique_lock guard(mutex, timeout_time);
+    if (guard.owns_lock()) {
+      f(v);
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  template <class Rep, class Period, typename F>
+  [[nodiscard]] bool try_with_for(
+      const std::chrono::duration<Rep, Period> &timeout_duration, F &&f)
+    requires TimedMutex<M>
+  {
+    std::unique_lock guard(mutex, timeout_duration);
     if (guard.owns_lock()) {
       f(v);
       return true;
@@ -106,6 +160,23 @@ class mutex_protected {
                                                       std::try_to_lock);
   }
 
+  template <class Clock, class Duration>
+  mutex_locked<const T, std::shared_lock<M>> try_lock_shared_until(
+      const std::chrono::time_point<Clock, Duration> &timeout_time)
+    requires SharedMutex<M> && TimedMutex<M>
+  {
+    return mutex_locked<const T, std::shared_lock<M>>(&v, mutex, timeout_time);
+  }
+
+  template <class Rep, class Period>
+  mutex_locked<const T, std::shared_lock<M>> try_lock_shared_for(
+      const std::chrono::duration<Rep, Period> &timeout_duration)
+    requires SharedMutex<M> && TimedMutex<M>
+  {
+    return mutex_locked<const T, std::shared_lock<M>>(&v, mutex,
+                                                      timeout_duration);
+  }
+
   template <typename F>
   void with_shared(F &&f)
     requires SharedMutex<M>
@@ -120,6 +191,34 @@ class mutex_protected {
   {
     std::shared_lock guard(mutex, std::try_to_lock);
     if (guard.owns_lock()) {
+      f(static_cast<const T &>(v));
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  template <class Clock, class Duration, typename F>
+  [[nodiscard]] bool try_with_shared_until(
+      const std::chrono::time_point<Clock, Duration> &timeout_time, F &&f)
+    requires SharedMutex<M> && TimedMutex<M>
+  {
+    std::shared_lock m_lock(mutex, timeout_time);
+    if (m_lock.owns_lock()) {
+      f(static_cast<const T &>(v));
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  template <class Rep, class Period, typename F>
+  [[nodiscard]] bool try_with_shared_for(
+      const std::chrono::duration<Rep, Period> &timeout_duration, F &&f)
+    requires SharedMutex<M> && TimedMutex<M>
+  {
+    std::shared_lock m_lock(mutex, timeout_duration);
+    if (m_lock.owns_lock()) {
       f(static_cast<const T &>(v));
       return true;
     } else {
