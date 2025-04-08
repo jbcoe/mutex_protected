@@ -461,6 +461,7 @@ TEST(CondVarMutexProtectedTest, ConditionVariableWorks) {
 TEST(CondVarMutexProtectedTest, ConditionVariableAnyWorks) {
   mutex_protected<int, std::shared_mutex> data = 0;
   std::condition_variable_any cv;
+  mutex_protected<int> out = 0;
 
   const int thread_count = 2;
 
@@ -471,6 +472,7 @@ TEST(CondVarMutexProtectedTest, ConditionVariableAnyWorks) {
       auto locked = data.lock_shared();
       cv.wait(*locked.mutex(), [&locked]() { return *locked > 0; });
       EXPECT_EQ(*locked, 1);
+      *out.lock() += *locked;
     });
   }
 
@@ -480,6 +482,7 @@ TEST(CondVarMutexProtectedTest, ConditionVariableAnyWorks) {
   for (auto& thread : threads) {
     thread.join();
   }
+  EXPECT_EQ(*out.lock(), thread_count);
 }
 
 }  // namespace xyz
