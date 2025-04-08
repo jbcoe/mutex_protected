@@ -8,6 +8,7 @@
 #include "gtest/gtest.h"
 
 using namespace std::chrono_literals;
+auto now = std::chrono::system_clock::now;
 
 namespace xyz {
 
@@ -290,7 +291,7 @@ TYPED_TEST(TimedMutexProtectedTest, TimeoutWorksCorrectly) {
 
   int out = 0;
   {
-    auto locked = value.try_lock_until(std::chrono::steady_clock::now() + 1ms);
+    auto locked = value.try_lock_until(now() + 1ms);
     ASSERT_TRUE(locked.owns_lock());
     out += *locked;
   }
@@ -300,8 +301,8 @@ TYPED_TEST(TimedMutexProtectedTest, TimeoutWorksCorrectly) {
     out += *locked;
   }
   {
-    ASSERT_TRUE(value.try_with_until(std::chrono::steady_clock::now() + 1ms,
-                                     [&out](auto& v) { out += v; }));
+    ASSERT_TRUE(
+        value.try_with_until(now() + 1ms, [&out](auto& v) { out += v; }));
   }
   {
     ASSERT_TRUE(value.try_with_for(1ms, [&out](auto& v) { out += v; }));
@@ -309,8 +310,7 @@ TYPED_TEST(TimedMutexProtectedTest, TimeoutWorksCorrectly) {
   auto write_locked = value.lock();
   std::thread t([&value, &out]() {
     {
-      auto locked =
-          value.try_lock_until(std::chrono::steady_clock::now() + 1ms);
+      auto locked = value.try_lock_until(now() + 1ms);
       ASSERT_FALSE(locked.owns_lock());
     }
     {
@@ -318,8 +318,8 @@ TYPED_TEST(TimedMutexProtectedTest, TimeoutWorksCorrectly) {
       ASSERT_FALSE(locked.owns_lock());
     }
     {
-      ASSERT_FALSE(value.try_with_until(std::chrono::steady_clock::now() + 1ms,
-                                        [&out](auto& v) { out += v; }));
+      ASSERT_FALSE(
+          value.try_with_until(now() + 1ms, [&out](auto& v) { out += v; }));
     }
     {
       ASSERT_FALSE(value.try_with_for(1ms, [&out](auto& v) { out += v; }));
@@ -334,8 +334,7 @@ TEST(SharedTimedMutexProtectedTest, SharedLockIsConst) {
   mutex_protected<int, std::shared_timed_mutex> value(0);
 
   {
-    auto locked =
-        value.try_lock_shared_until(std::chrono::steady_clock::now() + 1ms);
+    auto locked = value.try_lock_shared_until(now() + 1ms);
     static_assert(std::is_const_v<std::remove_reference_t<decltype(*locked)>>);
   }
   {
@@ -343,10 +342,9 @@ TEST(SharedTimedMutexProtectedTest, SharedLockIsConst) {
     static_assert(std::is_const_v<std::remove_reference_t<decltype(*locked)>>);
   }
   {
-    ASSERT_TRUE(value.try_with_shared_until(
-        std::chrono::steady_clock::now() + 1ms, [](auto& v) {
-          static_assert(std::is_const_v<std::remove_reference_t<decltype(v)>>);
-        }));
+    ASSERT_TRUE(value.try_with_shared_until(now() + 1ms, [](auto& v) {
+      static_assert(std::is_const_v<std::remove_reference_t<decltype(v)>>);
+    }));
   }
   {
     ASSERT_TRUE(value.try_with_shared_for(1ms, [](auto& v) {
@@ -360,8 +358,7 @@ TEST(SharedTimedMutexProtectedTest, TimeoutWorksCorrectly) {
 
   int out = 0;
   {
-    auto locked =
-        value.try_lock_shared_until(std::chrono::steady_clock::now() + 1ms);
+    auto locked = value.try_lock_shared_until(now() + 1ms);
     ASSERT_TRUE(locked.owns_lock());
     out += *locked;
   }
@@ -371,8 +368,8 @@ TEST(SharedTimedMutexProtectedTest, TimeoutWorksCorrectly) {
     out += *locked;
   }
   {
-    ASSERT_TRUE(value.try_with_shared_until(
-        std::chrono::steady_clock::now() + 1ms, [&out](auto& v) { out += v; }));
+    ASSERT_TRUE(value.try_with_shared_until(now() + 1ms,
+                                            [&out](auto& v) { out += v; }));
   }
   {
     ASSERT_TRUE(value.try_with_shared_for(1ms, [&out](auto& v) { out += v; }));
@@ -380,8 +377,7 @@ TEST(SharedTimedMutexProtectedTest, TimeoutWorksCorrectly) {
   auto write_locked = value.lock();
   std::thread t([&value, &out]() {
     {
-      auto locked =
-          value.try_lock_shared_until(std::chrono::steady_clock::now() + 1ms);
+      auto locked = value.try_lock_shared_until(now() + 1ms);
       ASSERT_FALSE(locked.owns_lock());
     }
     {
@@ -389,9 +385,8 @@ TEST(SharedTimedMutexProtectedTest, TimeoutWorksCorrectly) {
       ASSERT_FALSE(locked.owns_lock());
     }
     {
-      ASSERT_FALSE(
-          value.try_with_shared_until(std::chrono::steady_clock::now() + 1ms,
-                                      [&out](auto& v) { out += v; }));
+      ASSERT_FALSE(value.try_with_shared_until(now() + 1ms,
+                                               [&out](auto& v) { out += v; }));
     }
     {
       ASSERT_FALSE(

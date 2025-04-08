@@ -1,6 +1,7 @@
 #ifndef XYZ_MUTEX_PROTECTED_H
 #define XYZ_MUTEX_PROTECTED_H
 
+#include <chrono>
 #include <concepts>
 #include <mutex>
 #include <shared_mutex>
