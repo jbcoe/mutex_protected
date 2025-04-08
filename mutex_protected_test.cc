@@ -1,6 +1,7 @@
 #include "mutex_protected.h"
 
 #include <chrono>
+#include <queue>
 #include <string>
 #include <thread>
 #include <vector>
@@ -413,6 +414,63 @@ TEST(SharedTimedMutexProtectedTest, TimeoutWorksCorrectly) {
   t.join();
   EXPECT_EQ(out, 4);
   EXPECT_EQ(*write_locked, 1);
+}
+
+TEST(CondVarMutexProtectedTest, ConditionVariableWorks) {
+  mutex_protected<std::queue<int>> inputs;
+  mutex_protected<std::queue<int>> outputs;
+  std::condition_variable in_cv;
+  std::condition_variable out_cv;
+  std::stop_source stop;
+
+  const int items = 100;
+  const int thread_count = 2;
+
+  std::vector<std::thread> threads;
+  threads.reserve(thread_count);
+  for (int i = 0; i < thread_count; ++i) {
+    threads.emplace_back([&]() {
+      while (!stop.stop_requested()) {
+        int value;
+        {
+          auto locked = inputs.lock();
+          in_cv.wait(locked.guard(), [&stop, &locked]() {
+            return stop.stop_requested() || !locked->empty();
+          });
+          if (locked->empty()) {  // Stop requested, exit
+            return;
+          }
+          value = locked->front();
+          locked->pop();
+        }
+        outputs.lock()->push(value);
+        out_cv.notify_one();
+      }
+    });
+  }
+
+  int expected_total = 0;
+  for (int i = 0; i < items; ++i) {
+    inputs.with([&i](auto& in_q) { in_q.push(i); });
+    in_cv.notify_one();
+    expected_total += i;
+  }
+
+  int total = 0;
+  for (int i = 0; i < items; ++i) {
+    auto locked = outputs.lock();
+    out_cv.wait(locked.guard(), [&locked]() { return !locked->empty(); });
+    total += locked->front();
+    locked->pop();
+  }
+
+  stop.request_stop();
+  in_cv.notify_all();
+  for (auto& thread : threads) {
+    thread.join();
+  }
+
+  EXPECT_EQ(total, expected_total);
 }
 
 }  // namespace xyz

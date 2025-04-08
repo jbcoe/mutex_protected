@@ -40,6 +40,8 @@ concept TimedMutex = Mutex<M> && requires(M m) {
 template <class T, class G>
 class [[nodiscard]] mutex_locked {
  public:
+  using mutex_type = G::mutex_type;
+
   T *operator->() const { return v; }
 
   T &operator*() const { return *v; }
@@ -49,13 +51,20 @@ class [[nodiscard]] mutex_locked {
   bool owns_lock() const noexcept
     requires std::is_member_function_pointer_v<decltype(&G::owns_lock)>
   {
-    return guard.owns_lock();
+    return g.owns_lock();
   }
 
   operator bool() const noexcept
     requires std::is_member_function_pointer_v<decltype(&G::owns_lock)>
   {
-    return guard.owns_lock();
+    return g.owns_lock();
+  }
+
+  // Needed so that the lock guard can be used in a condition variable.
+  G &guard() noexcept
+    requires std::is_same_v<G, std::unique_lock<std::mutex>>
+  {
+    return g;
   }
 
   mutex_locked(const mutex_locked &) = delete;
@@ -68,11 +77,10 @@ class [[nodiscard]] mutex_locked {
 
  private:
   template <typename... Args>
-  mutex_locked(T *v_, Args &&...args)
-      : v{v_}, guard{std::forward<Args>(args)...} {}
+  mutex_locked(T *v_, Args &&...args) : v{v_}, g{std::forward<Args>(args)...} {}
 
   T *v;
-  G guard;
+  G g;
 
   template <class T_, Mutex M_>
   friend class mutex_protected;
@@ -86,8 +94,10 @@ class mutex_protected {
 
   mutex_protected(const T &v_) : mutex{}, v(v_) {}
 
-  mutex_locked<T, std::lock_guard<M>> lock() {
-    return mutex_locked<T, std::lock_guard<M>>(&v, mutex);
+  // Returning a `lock_guard` would be slightly faster, but wouldn't work with a
+  // condition variable.
+  mutex_locked<T, std::unique_lock<M>> lock() {
+    return mutex_locked<T, std::unique_lock<M>>(&v, mutex);
   }
 
   mutex_locked<T, std::unique_lock<M>> try_lock() {
