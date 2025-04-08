@@ -1,6 +1,7 @@
 #include "mutex_protected.h"
 
 #include <chrono>
+#include <condition_variable>
 #include <queue>
 #include <string>
 #include <thread>
