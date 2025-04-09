@@ -168,6 +168,43 @@ TYPED_TEST(MutexProtectedTest, ThreadSafetyCorrectnessWith) {
 
 // LCOV_EXCL_STOP
 
+// TYPED_TEST(MutexProtectedTest, LockMultiple) {
+//   mutex_protected<int, TypeParam> a(1);
+//   mutex_protected<int, TypeParam> b(2);
+//   {
+//     auto [la, lb] = lock(a, b);
+//     EXPECT_EQ(*la, 1);
+//     EXPECT_EQ(*lb, 2);
+//     *la += 10;
+//     *lb += 10;
+//   }
+//   {
+//     auto [lb, la] = lock(b, a);
+//     EXPECT_EQ(*la, 11);
+//     EXPECT_EQ(*lb, 12);
+//   }
+// }
+
+TEST(SimpleMutexProtectedTest, LockMultiple) {
+  mutex_protected<int> a(1);
+  mutex_protected<int> b(2);
+  {
+    // auto [la, lb] = lock(a, b);
+    auto locked_tuple = xyz::lock(a, b);
+    auto& la = std::get<0>(locked_tuple);
+    auto& lb = std::get<1>(locked_tuple);
+    EXPECT_EQ(*la, 1);
+    EXPECT_EQ(*lb, 2);
+    *la += 10;
+    *lb += 10;
+  }
+  // {
+  //   auto [lb, la] = lock(b, a);
+  //   EXPECT_EQ(*la, 11);
+  //   EXPECT_EQ(*lb, 12);
+  // }
+}
+
 template <typename T>
 class SharedMutexProtectedTest : public testing::Test {};
 
