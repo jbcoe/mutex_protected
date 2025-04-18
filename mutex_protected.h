@@ -58,6 +58,12 @@ class [[nodiscard]] mutex_locked {
     return guard.owns_lock();
   }
 
+  mutex_locked(const mutex_locked &) = delete;
+  mutex_locked &operator=(const mutex_locked &) = delete;
+  mutex_locked &operator=(mutex_locked &&) = delete;
+
+  mutex_locked(mutex_locked &&) noexcept;  // Needed for lock(...) to work.
+
  private:
   template <typename... Args>
   mutex_locked(T *v_, Args &&...args)
@@ -240,9 +246,9 @@ class mutex_protected {
 };
 
 template <typename... MutexProtected>
-auto lock(MutexProtected &...mp) {
-  std::lock(mp.mutex...);
-  return std::make_tuple(mp.adopt_lock()...);
+auto lock(MutexProtected &...mps) {
+  (mps.mutex.lock(), ...);
+  return std::make_tuple(mps.adopt_lock()...);
 }
 
 }  // namespace xyz
