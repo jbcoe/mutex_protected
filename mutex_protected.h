@@ -1,6 +1,7 @@
 #ifndef XYZ_MUTEX_PROTECTED_H
 #define XYZ_MUTEX_PROTECTED_H
 
+#include <cassert>
 #include <chrono>
 #include <concepts>
 #include <mutex>
@@ -37,6 +38,44 @@ concept TimedMutex = Mutex<M> && requires(M m) {
   } -> std::convertible_to<bool>;
 };
 
+template <class Mutex>
+class moveable_lock_guard {
+ public:
+  using mutex_type = Mutex;
+
+  moveable_lock_guard(Mutex &m) {
+    // TODO: Review this for thread-safety.
+    mutex = &m;
+    mutex->lock();
+  }
+
+  moveable_lock_guard(Mutex &m, std::adopt_lock_t) {
+    // TODO: Review this for thread-safety.
+    m.unlock();
+    mutex = &m;
+    mutex->lock();
+  }
+
+  moveable_lock_guard(const moveable_lock_guard &) = delete;
+  moveable_lock_guard &operator=(const moveable_lock_guard &) = delete;
+
+  moveable_lock_guard(moveable_lock_guard &&lg)
+      : mutex(std::exchange(lg.mutex, nullptr)) {
+    assert(mutex);
+  }
+
+  moveable_lock_guard &operator=(moveable_lock_guard &&) = delete;
+
+  ~moveable_lock_guard() {
+    if (mutex) {
+      mutex->unlock();
+    }
+  }
+
+ private:
+  Mutex *mutex;
+};
+
 template <class T, class G>
 class [[nodiscard]] mutex_locked {
  public:
@@ -62,7 +101,9 @@ class [[nodiscard]] mutex_locked {
   mutex_locked &operator=(const mutex_locked &) = delete;
   mutex_locked &operator=(mutex_locked &&) = delete;
 
-  mutex_locked(mutex_locked &&) noexcept;  // Needed for lock(...) to work.
+  mutex_locked(mutex_locked &&m) noexcept
+    requires std::move_constructible<G>
+      : v(std::exchange(m.v, nullptr)), guard(std::move(m.guard)) {}
 
  private:
   template <typename... Args>
@@ -237,8 +278,8 @@ class mutex_protected {
   T v;
 
   // Used by `xyz::lock` when locking multiple mutex_protected objects.
-  mutex_locked<T, std::lock_guard<M>> adopt_lock() {
-    return mutex_locked<T, std::lock_guard<M>>(&v, mutex, std::adopt_lock);
+  mutex_locked<T, moveable_lock_guard<M>> adopt_lock() {
+    return mutex_locked<T, moveable_lock_guard<M>>(&v, mutex, std::adopt_lock);
   }
 
   template <typename... MutexProtected>
