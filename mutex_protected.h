@@ -38,44 +38,6 @@ concept TimedMutex = Mutex<M> && requires(M m) {
   } -> std::convertible_to<bool>;
 };
 
-template <class Mutex>
-class moveable_lock_guard {
- public:
-  using mutex_type = Mutex;
-
-  moveable_lock_guard(Mutex &m) {
-    // TODO: Review this for thread-safety.
-    mutex = &m;
-    mutex->lock();
-  }
-
-  moveable_lock_guard(Mutex &m, std::adopt_lock_t) {
-    // TODO: Review this for thread-safety.
-    m.unlock();
-    mutex = &m;
-    mutex->lock();
-  }
-
-  moveable_lock_guard(const moveable_lock_guard &) = delete;
-  moveable_lock_guard &operator=(const moveable_lock_guard &) = delete;
-
-  moveable_lock_guard(moveable_lock_guard &&lg)
-      : mutex(std::exchange(lg.mutex, nullptr)) {
-    assert(mutex);
-  }
-
-  moveable_lock_guard &operator=(moveable_lock_guard &&) = delete;
-
-  ~moveable_lock_guard() {
-    if (mutex) {
-      mutex->unlock();
-    }
-  }
-
- private:
-  Mutex *mutex;
-};
-
 template <class T, class G>
 class [[nodiscard]] mutex_locked {
  public:
@@ -278,8 +240,8 @@ class mutex_protected {
   T v;
 
   // Used by `xyz::lock` when locking multiple mutex_protected objects.
-  mutex_locked<T, moveable_lock_guard<M>> adopt_lock() {
-    return mutex_locked<T, moveable_lock_guard<M>>(&v, mutex, std::adopt_lock);
+  mutex_locked<T, std::unique_lock<M>> adopt_lock() {
+    return mutex_locked<T, std::unique_lock<M>>(&v, mutex, std::adopt_lock);
   }
 
   template <typename... MutexProtected>
@@ -288,7 +250,7 @@ class mutex_protected {
 
 template <typename... MutexProtected>
 auto lock(MutexProtected &...mps) {
-  (mps.mutex.lock(), ...);
+  std::lock(mps.mutex...);
   return std::make_tuple(mps.adopt_lock()...);
 }
 
