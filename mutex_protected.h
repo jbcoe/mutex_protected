@@ -58,6 +58,14 @@ class [[nodiscard]] mutex_locked {
     return guard.owns_lock();
   }
 
+  mutex_locked(const mutex_locked &) = delete;
+  mutex_locked &operator=(const mutex_locked &) = delete;
+  mutex_locked &operator=(mutex_locked &&) = delete;
+
+  mutex_locked(mutex_locked &&m) noexcept
+    requires std::move_constructible<G>
+      : v(std::exchange(m.v, nullptr)), guard(std::move(m.guard)) {}
+
  private:
   template <typename... Args>
   mutex_locked(T *v_, Args &&...args)
@@ -229,6 +237,22 @@ class mutex_protected {
  private:
   M mutex;
   T v;
+
+  // Used by `xyz::lock` when locking multiple mutex_protected objects.
+  mutex_locked<T, std::unique_lock<M>> adopt_lock() {
+    return mutex_locked<T, std::unique_lock<M>>(&v, mutex, std::adopt_lock);
+  }
+
+  template <typename... MutexProtected>
+  friend auto lock(MutexProtected &...mp);
 };
+
+template <typename... MutexProtected>
+auto lock(MutexProtected &...mps) {
+  std::lock(mps.mutex...);
+  return std::make_tuple(mps.adopt_lock()...);
+}
+
 }  // namespace xyz
+
 #endif  // XYZ_MUTEX_PROTECTED_H
