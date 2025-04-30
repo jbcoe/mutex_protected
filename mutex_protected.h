@@ -73,7 +73,7 @@ class [[nodiscard]] mutex_locked {
 
   mutex_locked(mutex_locked &&m) noexcept
     requires std::move_constructible<G>
-      : v(std::exchange(m.v, nullptr)), guard(std::move(m.guard)) {}
+      : v(std::exchange(m.v, nullptr)), g(std::move(m.g)) {}
 
   // Needed for use with `std::condition_variable_any`, ie if you are using a
   // different mutex type.
