@@ -64,6 +64,103 @@ the standard library header `<mutex>`.
 
 ...
 
+## Choices
+
+### Explicit or overloaded method names
+
+Is it better to be explicit with all the variants, or use overloads? We've
+got a combinatorial explosion of variants over:
+
+- blocking vs non-blocking (`lock` vs `try_lock`)
+  - variations of non-blocking (immediate, `until`, `for`)
+- returning a `mutex_locked` vs taking a callable
+- exclusive vs shared.
+
+The existing mutex library seems to use explicit names, so that is what we chose
+so far, but that leads to a very busy api. Here's a sketch of what it looks like,
+though the templates, namespaces, `[[nodiscard]]` and concept constraints have
+been ommited for clarity.
+
+```c++
+  mutex_locked<T, lock_guard<M>> lock();
+  mutex_locked<T, unique_lock<M>> try_lock();
+  mutex_locked<T, unique_lock<M>> try_lock_until(const time_point &timeout_time);
+  mutex_locked<T, unique_lock<M>> try_lock_for(const duration &timeout_duration);
+
+  void with(F &&f);
+  bool try_with(F &&f);
+  bool try_with_until(const time_point &timeout_time, F &&f);
+  bool try_with_for(const duration &timeout_duration, F &&f);
+
+  mutex_locked<const T, shared_lock<M>> lock_shared();
+  mutex_locked<const T, shared_lock<M>> try_lock_shared();
+  mutex_locked<const T, shared_lock<M>> try_lock_shared_until(const time_point &timeout_time);
+  mutex_locked<const T, shared_lock<M>> try_lock_shared_for(const duration &timeout_duration);
+
+  void with_shared(F &&f);
+  bool try_with_shared(F &&f);
+  bool try_with_shared_until(const time_point &timeout_time, F &&f);
+  bool try_with_shared_for(const duration &timeout_duration, F &&f);
+```
+
+The advantage of the above is it's very explicit. The downside is it's not obvious
+whether the function you want is `try_with_shared_until`, `with_shared_try_until`,
+or any of the other possible permutations.
+
+The alternative is to use overloads. A potential api is below, with the same
+simplifications as above.
+
+```c++
+  mutex_locked<T, lock_guard<M>> lock();
+  mutex_locked<T, unique_lock<M>> lock(const time_point &timeout_time);
+  mutex_locked<T, unique_lock<M>> lock(const duration &timeout_duration);
+
+  void lock(F &&f);
+  bool lock(const time_point &timeout_time, F &&f);
+  bool lock(const duration &timeout_duration, F &&f);
+
+  mutex_locked<const T, shared_lock<M>> lock_shared();
+  mutex_locked<const T, shared_lock<M>> lock_shared(const time_point &timeout_time);
+  mutex_locked<const T, shared_lock<M>> lock_shared(const duration &timeout_duration);
+
+  void lock_shared(F &&f);
+  bool lock_shared(const time_point &timeout_time, F &&f);
+  bool lock_shared(const duration &timeout_duration, F &&f);
+```
+
+This leaves only two method names: `lock` and `lock_shared`, with optional
+timeout or callable, in that order.
+
+Note this removed the basic `try_lock` (and variants) that can be achieved with
+an explicit duration of `0s`, but we may need to add it back in some way to still
+support `try_lock` on a `std::mutex`. This suggests an alternative in
+between may be more reasonable:
+
+```c++
+  mutex_locked<T, lock_guard<M>> lock();
+  mutex_locked<T, unique_lock<M>> try_lock();
+  mutex_locked<T, unique_lock<M>> try_lock(const time_point &timeout_time);
+  mutex_locked<T, unique_lock<M>> try_lock(const duration &timeout_duration);
+
+  void lock(F &&f);
+  bool try_lock(F &&f);
+  bool try_lock(const time_point &timeout_time, F &&f);
+  bool try_lock(const duration &timeout_duration, F &&f);
+
+  mutex_locked<const T, shared_lock<M>> lock_shared();
+  mutex_locked<const T, shared_lock<M>> try_lock_shared();
+  mutex_locked<const T, shared_lock<M>> try_lock_shared(const time_point &timeout_time);
+  mutex_locked<const T, shared_lock<M>> try_lock_shared(const duration &timeout_duration);
+
+  void lock_shared(F &&f);
+  bool try_lock_shared(F &&f);
+  bool try_lock_shared(const time_point &timeout_time, F &&f);
+  bool try_lock_shared(const duration &timeout_duration, F &&f);
+```
+
+Relative to the first option, this elides `with`, `for` and `until`, while still
+maintaining all the functionality.
+
 # Reference implementation
 
 A reference implementation of this proposal is available on GitHub at
