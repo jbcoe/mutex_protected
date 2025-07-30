@@ -198,29 +198,30 @@ TYPED_TEST(MutexProtectedTest, TryLockMultiple) {
     *la += 10;
     *lb += 10;
   }
-  if constexpr (!std::is_same_v<TypeParam, std::recursive_mutex> &&
-                !std::is_same_v<TypeParam, std::recursive_timed_mutex>) {
-    {
-      auto r = xyz::try_lock_protected(a, b);
-      ASSERT_TRUE(r.has_value());
-      auto& [la, lb] = r.value();
-      EXPECT_EQ(*la, 11);
-      EXPECT_EQ(*lb, 12);
-    }
-    {
-      auto la = a.lock();
+  {
+    auto r = xyz::try_lock_protected(a, b);
+    ASSERT_TRUE(r.has_value());
+    auto& [la, lb] = r.value();
+    EXPECT_EQ(*la, 11);
+    EXPECT_EQ(*lb, 12);
+  }
+  {
+    auto la = a.lock();
+    std::thread t([&]() {  // Needed due to recursive locks.
       auto r = xyz::try_lock_protected(a, b);
       ASSERT_FALSE(r.has_value());
       EXPECT_EQ(r.error(), 0);
-    }
-    {
-      auto lb = b.lock();
+    });
+    t.join();
+  }
+  {
+    auto lb = b.lock();
+    std::thread t([&]() {  // Needed due to recursive locks.
       auto r = xyz::try_lock_protected(a, b);
       ASSERT_FALSE(r.has_value());
       EXPECT_EQ(r.error(), 1);
-    }
-  } else /* constexpr */ {
-    // Recursive mutexes can be locked multiple times by the same thread.
+    });
+    t.join();
   }
   {
     auto [lb, la] = xyz::lock_protected(b, a);

@@ -260,6 +260,7 @@ auto lock_protected(MutexProtected &...mps) {
 }
 
 template <typename... MutexProtected>
+
 auto try_lock_protected(MutexProtected &...mps)
     -> std::expected<std::tuple<decltype(mps.adopt_lock())...>, int> {
   int r = std::try_lock(mps.mutex...);
