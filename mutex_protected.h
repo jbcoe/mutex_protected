@@ -3,6 +3,7 @@
 
 #include <chrono>
 #include <concepts>
+#include <expected>
 #include <mutex>
 #include <shared_mutex>
 #include <thread>
@@ -252,6 +253,16 @@ template <typename... MutexProtected>
 auto lock_protected(MutexProtected &...mps) {
   std::lock(mps.mutex...);
   return std::make_tuple(mps.adopt_lock()...);
+}
+
+template <typename... MutexProtected>
+std::expected<auto, int> try_lock(MutexProtected &...mps) {
+  int r = std::try_lock(mps.mutex...);
+  if (r >= 0) {
+    return r;
+  } else {
+    return std::make_tuple(mps.adopt_lock()...);
+  }
 }
 
 }  // namespace xyz
