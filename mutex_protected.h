@@ -249,7 +249,8 @@ class mutex_protected {
   friend auto lock_protected(MutexProtected &...mp);
 
   template <typename... MutexProtected>
-  friend std::expected<auto, int> try_lock_protected(MutexProtected &...mp);
+  friend auto try_lock_protected(MutexProtected &...mps)
+      -> std::expected<std::tuple<decltype(mps.adopt_lock())...>, int>;
 };
 
 template <typename... MutexProtected>
@@ -259,12 +260,16 @@ auto lock_protected(MutexProtected &...mps) {
 }
 
 template <typename... MutexProtected>
-std::expected<auto, int> try_lock_protected(MutexProtected &...mps) {
+auto try_lock_protected(MutexProtected &...mps)
+    -> std::expected<std::tuple<decltype(mps.adopt_lock())...>, int> {
   int r = std::try_lock(mps.mutex...);
   if (r >= 0) {
-    return r;
+    return std::expected<std::tuple<decltype(mps.adopt_lock())...>, int>(
+        std::unexpect, r);
+
   } else {
-    return std::make_tuple(mps.adopt_lock()...);
+    return std::expected<std::tuple<decltype(mps.adopt_lock())...>, int>(
+        std::in_place, mps.adopt_lock()...);
   }
 }
 

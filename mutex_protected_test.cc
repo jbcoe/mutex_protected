@@ -191,23 +191,36 @@ TYPED_TEST(MutexProtectedTest, TryLockMultiple) {
   {
     auto r = xyz::try_lock_protected(a, b);
     ASSERT_TRUE(r.has_value());
-    auto [la, lb] = r.value();
+
+    auto& [la, lb] = r.value();
     EXPECT_EQ(*la, 1);
     EXPECT_EQ(*lb, 2);
     *la += 10;
     *lb += 10;
   }
-  {
-    auto la = a.lock();
-    auto r = xyz::try_lock_protected(a, b);
-    ASSERT_FALSE(r.has_value());
-    EXPECT_EQ(r.error(), 0);
-  }
-  {
-    auto lb = b.lock();
-    auto r = xyz::try_lock_protected(a, b);
-    ASSERT_FALSE(r.has_value());
-    EXPECT_EQ(r.error(), 1);
+  if constexpr (!std::is_same_v<TypeParam, std::recursive_mutex> &&
+                !std::is_same_v<TypeParam, std::recursive_timed_mutex>) {
+    {
+      auto r = xyz::try_lock_protected(a, b);
+      ASSERT_TRUE(r.has_value());
+      auto& [la, lb] = r.value();
+      EXPECT_EQ(*la, 11);
+      EXPECT_EQ(*lb, 12);
+    }
+    {
+      auto la = a.lock();
+      auto r = xyz::try_lock_protected(a, b);
+      ASSERT_FALSE(r.has_value());
+      EXPECT_EQ(r.error(), 0);
+    }
+    {
+      auto lb = b.lock();
+      auto r = xyz::try_lock_protected(a, b);
+      ASSERT_FALSE(r.has_value());
+      EXPECT_EQ(r.error(), 1);
+    }
+  } else /* constexpr */ {
+    // Recursive mutexes can be locked multiple times by the same thread.
   }
   {
     auto [lb, la] = xyz::lock_protected(b, a);
@@ -321,8 +334,8 @@ TYPED_TEST(SharedMutexProtectedTest, ThreadSafetyCorrectness) {
   }
   EXPECT_EQ(*value.lock(), writers * iters);
 
-  // Hopefully this stops things from being optimized away, but I don't see how
-  // this could fail.
+  // Hopefully this stops things from being optimized away, but I don't see
+  // how this could fail.
   EXPECT_LE(*grand_total.lock(), (long long)readers * writers * iters * iters);
 }
 
