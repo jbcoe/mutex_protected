@@ -161,6 +161,25 @@ between may be more reasonable:
 Relative to the first option, this elides `with`, `for` and `until`, while still
 maintaining all the functionality.
 
+### No upgrade locks
+
+Folly supports [upgrade locks](
+https://github.com/facebook/folly/blob/main/folly/docs/Synchronized.md#intro-to-upgrade-mutexes)
+to avoid read or write starvation when using a `std::shared_mutex`.
+
+Boost offers an [upgradable mutex](
+https://www.boost.org/doc/libs/1_59_0/doc/html/interprocess/synchronization_mechanisms.html#interprocess.synchronization_mechanisms.sharable_upgradable_mutexes)
+which would probably work with `mutex_protected`, but only for the standard
+operations. Their [synchronized_value](
+https://www.boost.org/doc/libs/1_81_0/doc/html/thread/sds.html#thread.sds.synchronized_valuesxxx)
+doesn't appear to support the upgrade operations.
+
+We decided to not add upgrade locks since it adds a fair amount of hidden
+overhead in the form of an additional mutex to make the transitions atomic
+and deadlock-proof. If a `std::upgradable_shared_mutex` (or similar) was added
+to the standard library, the upgrade transition methods should also be added
+to `mutex_protected`.
+
 # Reference implementation
 
 A reference implementation of this proposal is available on GitHub at
