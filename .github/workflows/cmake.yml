@@ -142,18 +142,6 @@ jobs:
               os: windows-latest,
               compiler: { type: VISUAL, version: 19, cc: "cl", cxx: "cl" },
             }
-          - {
-              name: "MacOS Apple Clang 15",
-              os: macos-14,
-              compiler:
-                {
-                  type: APPLE_CLANG,
-                  version: "15.0",
-                  cc: "clang",
-                  cxx: "clang++",
-                  std: 20,
-                },
-            }
     steps:
       - uses: actions/checkout@v4
       - uses: seanmiddleditch/gha-setup-ninja@master
