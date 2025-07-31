@@ -172,14 +172,14 @@ TYPED_TEST(MutexProtectedTest, LockMultiple) {
   mutex_protected<int, TypeParam> a(1);
   mutex_protected<int, TypeParam> b(2);
   {
-    auto [la, lb] = xyz::lock(a, b);
+    auto [la, lb] = xyz::lock_protected(a, b);
     EXPECT_EQ(*la, 1);
     EXPECT_EQ(*lb, 2);
     *la += 10;
     *lb += 10;
   }
   {
-    auto [lb, la] = xyz::lock(b, a);
+    auto [lb, la] = xyz::lock_protected(b, a);
     EXPECT_EQ(*la, 11);
     EXPECT_EQ(*lb, 12);
   }

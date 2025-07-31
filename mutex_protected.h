@@ -238,17 +238,18 @@ class mutex_protected {
   M mutex;
   T v;
 
-  // Used by `xyz::lock` when locking multiple mutex_protected objects.
+  // Used by `xyz::lock_protected` when locking multiple mutex_protected
+  // objects.
   mutex_locked<T, std::unique_lock<M>> adopt_lock() {
     return mutex_locked<T, std::unique_lock<M>>(&v, mutex, std::adopt_lock);
   }
 
   template <typename... MutexProtected>
-  friend auto lock(MutexProtected &...mp);
+  friend auto lock_protected(MutexProtected &...mp);
 };
 
 template <typename... MutexProtected>
-auto lock(MutexProtected &...mps) {
+auto lock_protected(MutexProtected &...mps) {
   std::lock(mps.mutex...);
   return std::make_tuple(mps.adopt_lock()...);
 }
