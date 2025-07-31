@@ -59,6 +59,43 @@ int main() {
 }
 ```
 
+### Condition Variables
+
+Condition variables are used to wait for a particular change to occur on
+internal data, but need access to either the underlying lock guard or the
+underlying mutex.
+
+#### std::mutex
+
+`std::condition_variable` only works with a `std::mutex`, so when using
+The `mutex_protected<T, std::mutex>` the `mutex_locked` instance has a `guard`
+method that returns the underlying `std::unique_lock`.
+
+```cpp
+mutex_protected<std::vector<int>> data;
+std::condition_variable cv;
+
+// Wait for some other thread to add data to the vector.
+auto locked = data.lock();
+cv.wait(locked.guard(), [&locked]() { return !locked->empty(); });
+```
+
+#### Other mutexes, eg: std::shared_mutex
+
+For all other mutex types, you'll need to use a `std::condition_variable_any`
+which works on the mutex instead of on the guard. For that, you can use the
+`mutex` method on the `mutex_locked`. This works regardless of whether the
+lock is exclusive or shared.
+
+```cpp
+mutex_protected<std::vector<int>, std::shared_mutex> data;
+std::condition_variable_any cv;
+
+// Wait for some other thread to add data to the vector.
+auto locked = data.lock();
+cv.wait(locked.mutex(), [&locked]() { return !locked->empty(); });
+```
+
 ## License
 
 This code is licensed under the MIT License. See [LICENSE](LICENSE) for details.
