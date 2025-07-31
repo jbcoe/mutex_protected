@@ -207,7 +207,7 @@ TYPED_TEST(MutexProtectedTest, TryLockMultiple) {
   }
   {
     auto la = a.lock();
-    std::thread t([&value]() {  // The thread is needed due to recursive locks.
+    std::thread t([&]() {  // The thread is needed due to recursive locks.
       auto r = xyz::try_lock_protected(a, b);
       ASSERT_FALSE(r.has_value());
       EXPECT_EQ(r.error(), 0);
@@ -216,7 +216,7 @@ TYPED_TEST(MutexProtectedTest, TryLockMultiple) {
   }
   {
     auto lb = b.lock();
-    std::thread t([&value]() {
+    std::thread t([&]() {
       auto r = xyz::try_lock_protected(a, b);
       ASSERT_FALSE(r.has_value());
       EXPECT_EQ(r.error(), 1);
