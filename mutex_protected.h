@@ -249,7 +249,6 @@ class mutex_protected {
   friend auto lock_protected(MutexProtected &...mp);
 
   template <typename... MutexProtected>
-
   friend auto try_lock_protected(MutexProtected &...mps)
       -> std::expected<std::tuple<decltype(mps.adopt_lock())...>, int>;
 };
