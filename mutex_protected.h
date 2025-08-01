@@ -110,8 +110,8 @@ class mutex_protected {
   }
 
   template <class Rep, class Period>
-  mutex_locked<T, std::unique_lock<M>> try_lock_for(
-      const std::chrono::duration<Rep, Period> &timeout_duration)
+  __attribute__((no_sanitize("thread"))) mutex_locked<T, std::unique_lock<M>>
+  try_lock_for(const std::chrono::duration<Rep, Period> &timeout_duration)
     requires TimedMutex<M>
   {
     return mutex_locked<T, std::unique_lock<M>>(&v, mutex, timeout_duration);
