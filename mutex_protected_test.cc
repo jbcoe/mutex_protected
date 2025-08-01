@@ -353,6 +353,8 @@ TYPED_TEST(TimedMutexProtectedTest, TimeoutForWorksCorrectly) {
   std::cout << "__has_feature is defined" << std::endl;
 #if __has_feature(thread_sanitizer)
   std::cout << "__has_feature(thread_sanitizer) is true" << std::endl;
+  GTEST_SKIP()
+      << "Skipping due to known TSAN false positive (llvm/llvm-project#62623)";
 #else
   std::cout << "__has_feature(thread_sanitizer) is false" << std::endl;
 #endif
@@ -362,12 +364,16 @@ TYPED_TEST(TimedMutexProtectedTest, TimeoutForWorksCorrectly) {
 
 #ifdef __SANITIZE_THREAD__
   std::cout << "__SANITIZE_THREAD__ is defined" << std::endl;
+  GTEST_SKIP()
+      << "Skipping due to known TSAN false positive (llvm/llvm-project#62623)";
 #else
   std::cout << "__SANITIZE_THREAD__ is NOT defined" << std::endl;
 #endif
 
 #if defined(THREAD_SANITIZER)
   std::cout << "THREAD_SANITIZER is defined" << std::endl;
+  GTEST_SKIP()
+      << "Skipping due to known TSAN false positive (llvm/llvm-project#62623)";
 #else
   std::cout << "THREAD_SANITIZER is NOT defined" << std::endl;
 #endif
@@ -375,6 +381,8 @@ TYPED_TEST(TimedMutexProtectedTest, TimeoutForWorksCorrectly) {
   // Check environment variables too
   if (const char* tsan_options = std::getenv("TSAN_OPTIONS")) {
     std::cout << "TSAN_OPTIONS: " << tsan_options << std::endl;
+    GTEST_SKIP() << "Skipping due to known TSAN false positive "
+                    "(llvm/llvm-project#62623)";
   } else {
     std::cout << "TSAN_OPTIONS not set" << std::endl;
   }
