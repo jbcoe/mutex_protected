@@ -297,17 +297,17 @@ namespace xyz {
 //   iters);
 // }
 
-template <typename T>
-class TimedMutexProtectedTest : public testing::Test {};
+// template <typename T>
+// class TimedMutexProtectedTest : public testing::Test {};
 
-using TimedMutexes = ::testing::Types<std::timed_mutex
-                                      //, std::recursive_timed_mutex
-                                      //, std::shared_timed_mutex
-                                      >;
-TYPED_TEST_SUITE(TimedMutexProtectedTest, TimedMutexes);
+// using TimedMutexes = ::testing::Types<std::timed_mutex
+//                                       //, std::recursive_timed_mutex
+//                                       //, std::shared_timed_mutex
+//                                       >;
+// TYPED_TEST_SUITE(TimedMutexProtectedTest, TimedMutexes);
 
-TYPED_TEST(TimedMutexProtectedTest, TimeoutWorksCorrectly) {
-  mutex_protected<int, TypeParam> value(1);
+TEST(TimedMutexProtectedTest, TimeoutWorksCorrectly) {
+  mutex_protected<int, std::timed_mutex> value(1);
 
   // int out = 0;
   // {
