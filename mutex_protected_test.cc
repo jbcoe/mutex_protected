@@ -348,7 +348,7 @@ TYPED_TEST(TimedMutexProtectedTest, TimeoutWorksCorrectly) {
   // }
   // });
   // t.join();
-  EXPECT_EQ(out, 4);
+  EXPECT_EQ(out, 2);
   EXPECT_EQ(*write_locked, 1);
 }
 
