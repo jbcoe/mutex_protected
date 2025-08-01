@@ -303,7 +303,6 @@ using TimedMutexes =
                      std::shared_timed_mutex>;
 TYPED_TEST_SUITE(TimedMutexProtectedTest, TimedMutexes);
 
-__attribute__((no_sanitize("thread")))
 TYPED_TEST(TimedMutexProtectedTest, TimeoutWorksCorrectly) {
   mutex_protected<int, TypeParam> value(1);
 
@@ -313,6 +312,16 @@ TYPED_TEST(TimedMutexProtectedTest, TimeoutWorksCorrectly) {
     ASSERT_TRUE(locked.owns_lock());
     out += *locked;
   }
+// Apply the attribute to the specific code block that needs TSan disabled
+// Note: __has_feature(thread_sanitizer) check is good practice for portability
+#if defined(__has_feature)
+#if __has_feature(thread_sanitizer)
+  // [[clang::no_sanitize("thread")]]  // Or use
+  // __attribute__((no_sanitize("thread"))) with GCC
+  [[clang::no_sanitize(
+      "thread")]]  // https://github.com/llvm/llvm-project/issues/62623
+#endif
+#endif
   {
     auto locked = value.try_lock_for(1ms);
     ASSERT_TRUE(locked.owns_lock());
