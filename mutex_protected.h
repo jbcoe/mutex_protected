@@ -72,7 +72,9 @@ class [[nodiscard]] mutex_locked {
  private:
   template <typename... Args>
   mutex_locked(T *v_, Args &&...args)
-      : v{v_}, guard{std::forward<Args>(args)...} {}
+      : v{v_}, guard{std::forward<Args>(args)...} {
+    std::cout << "mutex_locked private constructor called" << std::endl;
+  }
 
   T *v;
   G guard;
