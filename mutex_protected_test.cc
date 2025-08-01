@@ -312,14 +312,11 @@ TYPED_TEST(TimedMutexProtectedTest, TimeoutWorksCorrectly) {
     ASSERT_TRUE(locked.owns_lock());
     out += *locked;
   }
-// Apply the attribute to the specific code block that needs TSan disabled
-// Note: __has_feature(thread_sanitizer) check is good practice for portability
 #if defined(__has_feature)
 #if __has_feature(thread_sanitizer)
-  // [[clang::no_sanitize("thread")]]  // Or use
-  // __attribute__((no_sanitize("thread"))) with GCC
-  [[clang::no_sanitize(
-      "thread")]]  // https://github.com/llvm/llvm-project/issues/62623
+  // Disable TSAN for try_lock_for, which has a known false positive.
+  // https://github.com/llvm/llvm-project/issues/62623
+  [[clang::no_sanitize("thread")]]
 #endif
 #endif
   {

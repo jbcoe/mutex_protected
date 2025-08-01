@@ -3,7 +3,6 @@
 
 #include <chrono>
 #include <concepts>
-#include <iostream>
 #include <mutex>
 #include <shared_mutex>
 #include <thread>
@@ -45,8 +44,6 @@ class [[nodiscard]] mutex_locked {
 
   T &operator*() const { return *v; }
 
-  T &value() const { return *v; }
-
   // owns_lock and operator bool are only available when mutex_protected is
   // called with try_*.
   bool owns_lock() const noexcept
@@ -67,16 +64,12 @@ class [[nodiscard]] mutex_locked {
 
   mutex_locked(mutex_locked &&m) noexcept
     requires std::move_constructible<G>
-      : v(std::exchange(m.v, nullptr)), guard(std::move(m.guard)) {
-    std::cout << "mutex_locked move constructor called" << std::endl;
-  }
+      : v(std::exchange(m.v, nullptr)), guard(std::move(m.guard)) {}
 
  private:
   template <typename... Args>
   mutex_locked(T *v_, Args &&...args)
-      : v{v_}, guard{std::forward<Args>(args)...} {
-    std::cout << "mutex_locked private constructor called" << std::endl;
-  }
+      : v{v_}, guard{std::forward<Args>(args)...} {}
 
   T *v;
   G guard;
