@@ -300,10 +300,10 @@ namespace xyz {
 template <typename T>
 class TimedMutexProtectedTest : public testing::Test {};
 
-using TimedMutexes = ::testing::Types<std::timed_mutex
-                                      //, std::recursive_timed_mutex
-                                      //, std::shared_timed_mutex
-                                      >;
+using TimedMutexes = ::testing::Types<  // std::timed_mutex
+    std::recursive_timed_mutex
+    //, std::shared_timed_mutex
+    >;
 TYPED_TEST_SUITE(TimedMutexProtectedTest, TimedMutexes);
 
 TYPED_TEST(TimedMutexProtectedTest, TimeoutWorksCorrectly) {
