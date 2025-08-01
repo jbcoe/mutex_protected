@@ -333,8 +333,7 @@ TYPED_TEST(TimedMutexProtectedTest, TimeoutUntilWorksCorrectly) {
   EXPECT_EQ(*write_locked, 1);
 }
 
-#if defined(__has_feature)
-#if __has_feature(thread_sanitizer)
+#if !defined(THREAD_SANITIZER)
 // Disable TSAN for try_lock_for, which has a known false positive.
 // https://github.com/llvm/llvm-project/issues/62623
 // Lots of debugging in
@@ -368,7 +367,6 @@ TYPED_TEST(TimedMutexProtectedTest, TimeoutForWorksCorrectly) {
   EXPECT_EQ(out, 1);
   EXPECT_EQ(*write_locked, 1);
 }
-#endif
 #endif
 
 TEST(SharedTimedMutexProtectedTest, SharedLockIsConst) {
