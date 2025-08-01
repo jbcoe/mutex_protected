@@ -309,16 +309,16 @@ TYPED_TEST_SUITE(TimedMutexProtectedTest, TimedMutexes);
 TYPED_TEST(TimedMutexProtectedTest, TimeoutWorksCorrectly) {
   mutex_protected<int, TypeParam> value(1);
 
-  int out = 0;
-  {
-    auto locked = value.try_lock_for(1ms);
-    ASSERT_TRUE(locked.owns_lock());
-    out += *locked;
-  }
+  // int out = 0;
   {
     auto locked = value.try_lock_until(now() + 1ms);
     ASSERT_TRUE(locked.owns_lock());
-    out += *locked;
+    // out += *locked;
+  }
+  {
+    auto locked = value.try_lock_for(1ms);
+    ASSERT_TRUE(locked.owns_lock());
+    // out += *locked;
   }
   // {
   //   ASSERT_TRUE(
