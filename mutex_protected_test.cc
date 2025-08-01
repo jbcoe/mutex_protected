@@ -1,18 +1,11 @@
 #include "mutex_protected.h"
 
 #include <chrono>
-#include <iostream>
 #include <string>
 #include <thread>
 #include <vector>
 
 #include "gtest/gtest.h"
-
-// At the top of your file, add:
-extern "C" {
-// TSAN provides this function
-int __tsan_on_notify(void*) __attribute__((weak));
-}
 
 using namespace std::chrono_literals;
 auto now = std::chrono::system_clock::now;
@@ -340,78 +333,16 @@ TYPED_TEST(TimedMutexProtectedTest, TimeoutUntilWorksCorrectly) {
   EXPECT_EQ(*write_locked, 1);
 }
 
-// #if !defined(THREAD_SANITIZER)
-// Disable TSAN for try_lock_for, which has a known false positive.
-// https://github.com/llvm/llvm-project/issues/62623
-// Lots of debugging in
-// https://github.com/jbcoe/mutex_protected/issues/29
-// https://github.com/jbcoe/mutex_protected/pull/43
 TYPED_TEST(TimedMutexProtectedTest, TimeoutForWorksCorrectly) {
-  std::cout << "Debug macro values:" << std::endl;
-
-#ifdef __has_feature
-  std::cout << "__has_feature is defined" << std::endl;
-#if __has_feature(thread_sanitizer)
-  std::cout << "__has_feature(thread_sanitizer) is true" << std::endl;
-  GTEST_SKIP()
-      << "Skipping due to known TSAN false positive (llvm/llvm-project#62623)";
-#else
-  std::cout << "__has_feature(thread_sanitizer) is false" << std::endl;
-#endif
-#else
-  std::cout << "__has_feature is NOT defined" << std::endl;
-#endif
-
 #ifdef __SANITIZE_THREAD__
-  std::cout << "__SANITIZE_THREAD__ is defined" << std::endl;
-  GTEST_SKIP()
-      << "Skipping due to known TSAN false positive (llvm/llvm-project#62623)";
-#else
-  std::cout << "__SANITIZE_THREAD__ is NOT defined" << std::endl;
-#endif
-
-#if defined(THREAD_SANITIZER)
-  std::cout << "THREAD_SANITIZER is defined" << std::endl;
-  GTEST_SKIP()
-      << "Skipping due to known TSAN false positive (llvm/llvm-project#62623)";
-#else
-  std::cout << "THREAD_SANITIZER is NOT defined" << std::endl;
-#endif
-
-  // Check environment variables too
-  if (const char* tsan_options = std::getenv("TSAN_OPTIONS")) {
-    std::cout << "TSAN_OPTIONS: " << tsan_options << std::endl;
-    GTEST_SKIP() << "Skipping due to known TSAN false positive "
-                    "(llvm/llvm-project#62623)";
-  } else {
-    std::cout << "TSAN_OPTIONS not set" << std::endl;
-  }
-
-  // Runtime check if TSAN is active
-  if (&__tsan_on_notify != nullptr) {
-    std::cout << "__tsan_on_notify is not nullptr" << std::endl;
-    GTEST_SKIP() << "Skipping due to known TSAN false positive "
-                    "(llvm/llvm-project#62623)";
-  } else {
-    std::cout << "__tsan_on_notify is nullptr" << std::endl;
-  }
-
-#if defined(__has_feature)
-#if __has_feature(thread_sanitizer)
+  // Disable TSAN for try_lock_for, which has a known false positive.
+  // https://github.com/llvm/llvm-project/issues/62623
+  // Lots of debugging in
+  // https://github.com/jbcoe/mutex_protected/issues/29
+  // https://github.com/jbcoe/mutex_protected/pull/43
   GTEST_SKIP()
       << "Skipping due to known TSAN false positive (llvm/llvm-project#62623)";
 #endif
-#elif defined(__SANITIZE_THREAD__)
-  GTEST_SKIP()
-      << "Skipping due to known TSAN false positive (llvm/llvm-project#62623)";
-#elif defined(THREAD_SANITIZER)
-  GTEST_SKIP()
-      << "Skipping due to known TSAN false positive (llvm/llvm-project#62623)";
-#endif
-  if (const char* tsan_options = std::getenv("TSAN_OPTIONS")) {
-    GTEST_SKIP() << "Skipping due to known TSAN false positive "
-                    "(llvm/llvm-project#62623)";
-  }
 
   mutex_protected<int, TypeParam> value(1);
 
@@ -440,8 +371,6 @@ TYPED_TEST(TimedMutexProtectedTest, TimeoutForWorksCorrectly) {
   EXPECT_EQ(out, 2);
   EXPECT_EQ(*write_locked, 1);
 }
-
-// #endif
 
 TEST(SharedTimedMutexProtectedTest, SharedLockIsConst) {
   mutex_protected<int, std::shared_timed_mutex> value(0);
