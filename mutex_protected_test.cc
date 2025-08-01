@@ -352,6 +352,10 @@ TYPED_TEST(TimedMutexProtectedTest, TimeoutForWorksCorrectly) {
   GTEST_SKIP()
       << "Skipping due to known TSAN false positive (llvm/llvm-project#62623)";
 #endif
+  if (const char* tsan_options = std::getenv("TSAN_OPTIONS")) {
+    GTEST_SKIP() << "Skipping due to known TSAN false positive "
+                    "(llvm/llvm-project#62623)";
+  }
 
   mutex_protected<int, TypeParam> value(1);
 
