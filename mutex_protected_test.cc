@@ -348,6 +348,9 @@ TYPED_TEST(TimedMutexProtectedTest, TimeoutForWorksCorrectly) {
 #elif defined(__SANITIZE_THREAD__)
   GTEST_SKIP()
       << "Skipping due to known TSAN false positive (llvm/llvm-project#62623)";
+#elif defined(THREAD_SANITIZER)
+  GTEST_SKIP()
+      << "Skipping due to known TSAN false positive (llvm/llvm-project#62623)";
 #endif
 
   mutex_protected<int, TypeParam> value(1);
