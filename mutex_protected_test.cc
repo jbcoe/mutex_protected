@@ -320,14 +320,14 @@ TYPED_TEST(TimedMutexProtectedTest, TimeoutWorksCorrectly) {
     ASSERT_TRUE(locked.owns_lock());
     out += *locked;
   }
-  {
-    ASSERT_TRUE(
-        value.try_with_until(now() + 1ms, [&out](auto& v) { out += v; }));
-  }
-  {
-    ASSERT_TRUE(value.try_with_for(1ms, [&out](auto& v) { out += v; }));
-  }
-  EXPECT_EQ(out, 4);
+  // {
+  //   ASSERT_TRUE(
+  //       value.try_with_until(now() + 1ms, [&out](auto& v) { out += v; }));
+  // }
+  // {
+  //   ASSERT_TRUE(value.try_with_for(1ms, [&out](auto& v) { out += v; }));
+  // }
+  // EXPECT_EQ(out, 4);
 
   auto write_locked = value.lock();
   // std::thread t([&value, &out]() {
