@@ -327,6 +327,8 @@ TYPED_TEST(TimedMutexProtectedTest, TimeoutWorksCorrectly) {
   {
     ASSERT_TRUE(value.try_with_for(1ms, [&out](auto& v) { out += v; }));
   }
+  EXPECT_EQ(out, 4);
+
   auto write_locked = value.lock();
   std::thread t([&value, &out]() {
     {

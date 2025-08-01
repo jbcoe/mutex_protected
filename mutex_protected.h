@@ -3,6 +3,7 @@
 
 #include <chrono>
 #include <concepts>
+#include <iostream>
 #include <mutex>
 #include <shared_mutex>
 #include <thread>
@@ -64,7 +65,9 @@ class [[nodiscard]] mutex_locked {
 
   mutex_locked(mutex_locked &&m) noexcept
     requires std::move_constructible<G>
-      : v(std::exchange(m.v, nullptr)), guard(std::move(m.guard)) {}
+      : v(std::exchange(m.v, nullptr)), guard(std::move(m.guard)) {
+    std::cout << "mutex_locked move constructor called" << std::endl;
+  }
 
  private:
   template <typename... Args>
