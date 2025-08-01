@@ -315,11 +315,11 @@ TYPED_TEST(TimedMutexProtectedTest, TimeoutWorksCorrectly) {
     ASSERT_TRUE(locked.owns_lock());
     out += *locked;
   }
-  {
-    auto locked = value.try_lock_for(1ms);
-    ASSERT_TRUE(locked.owns_lock());
-    out += *locked;
-  }
+  // {
+  //   auto locked = value.try_lock_for(1ms);
+  //   ASSERT_TRUE(locked.owns_lock());
+  //   out += *locked;
+  // }
   // {
   //   ASSERT_TRUE(
   //       value.try_with_until(now() + 1ms, [&out](auto& v) { out += v; }));

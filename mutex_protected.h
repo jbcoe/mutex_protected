@@ -45,6 +45,8 @@ class [[nodiscard]] mutex_locked {
 
   T &operator*() const { return *v; }
 
+  T &value() const { return *v; }
+
   // owns_lock and operator bool are only available when mutex_protected is
   // called with try_*.
   bool owns_lock() const noexcept
