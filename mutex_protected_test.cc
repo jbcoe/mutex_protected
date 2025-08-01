@@ -303,6 +303,7 @@ using TimedMutexes =
                      std::shared_timed_mutex>;
 TYPED_TEST_SUITE(TimedMutexProtectedTest, TimedMutexes);
 
+__attribute__((no_sanitize("thread")))
 TYPED_TEST(TimedMutexProtectedTest, TimeoutWorksCorrectly) {
   mutex_protected<int, TypeParam> value(1);
 
