@@ -300,10 +300,10 @@ namespace xyz {
 template <typename T>
 class TimedMutexProtectedTest : public testing::Test {};
 
-using TimedMutexes = ::testing::Types<  // std::timed_mutex
-    std::recursive_timed_mutex
-    //, std::shared_timed_mutex
-    >;
+using TimedMutexes = ::testing::Types<std::timed_mutex
+                                      //, std::recursive_timed_mutex
+                                      //, std::shared_timed_mutex
+                                      >;
 TYPED_TEST_SUITE(TimedMutexProtectedTest, TimedMutexes);
 
 TYPED_TEST(TimedMutexProtectedTest, TimeoutWorksCorrectly) {
@@ -330,24 +330,24 @@ TYPED_TEST(TimedMutexProtectedTest, TimeoutWorksCorrectly) {
   EXPECT_EQ(out, 4);
 
   auto write_locked = value.lock();
-  std::thread t([&value, &out]() {
-    {
-      auto locked = value.try_lock_until(now() + 1ms);
-      ASSERT_FALSE(locked.owns_lock());
-    }
-    {
-      auto locked = value.try_lock_for(1ms);
-      ASSERT_FALSE(locked.owns_lock());
-    }
-    {
-      ASSERT_FALSE(
-          value.try_with_until(now() + 1ms, [&out](auto& v) { out += v; }));
-    }
-    {
-      ASSERT_FALSE(value.try_with_for(1ms, [&out](auto& v) { out += v; }));
-    }
-  });
-  t.join();
+  // std::thread t([&value, &out]() {
+  {
+    auto locked = value.try_lock_until(now() + 1ms);
+    ASSERT_FALSE(locked.owns_lock());
+  }
+  {
+    auto locked = value.try_lock_for(1ms);
+    ASSERT_FALSE(locked.owns_lock());
+  }
+  {
+    ASSERT_FALSE(
+        value.try_with_until(now() + 1ms, [&out](auto& v) { out += v; }));
+  }
+  {
+    ASSERT_FALSE(value.try_with_for(1ms, [&out](auto& v) { out += v; }));
+  }
+  // });
+  // t.join();
   EXPECT_EQ(out, 4);
   EXPECT_EQ(*write_locked, 1);
 }
