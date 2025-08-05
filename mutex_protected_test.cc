@@ -303,9 +303,8 @@ using TimedMutexes =
                      std::shared_timed_mutex>;
 TYPED_TEST_SUITE(TimedMutexProtectedTest, TimedMutexes);
 
-TYPED_TEST(TimedMutexProtectedTest, TimeoutWorksCorrectly) {
+TYPED_TEST(TimedMutexProtectedTest, TimeoutUntilWorksCorrectly) {
   mutex_protected<int, TypeParam> value(1);
-
   int out = 0;
   {
     auto locked = value.try_lock_until(now() + 1ms);
@@ -313,16 +312,8 @@ TYPED_TEST(TimedMutexProtectedTest, TimeoutWorksCorrectly) {
     out += *locked;
   }
   {
-    auto locked = value.try_lock_for(1ms);
-    ASSERT_TRUE(locked.owns_lock());
-    out += *locked;
-  }
-  {
     ASSERT_TRUE(
         value.try_with_until(now() + 1ms, [&out](auto& v) { out += v; }));
-  }
-  {
-    ASSERT_TRUE(value.try_with_for(1ms, [&out](auto& v) { out += v; }));
   }
   auto write_locked = value.lock();
   std::thread t([&value, &out]() {
@@ -331,19 +322,48 @@ TYPED_TEST(TimedMutexProtectedTest, TimeoutWorksCorrectly) {
       ASSERT_FALSE(locked.owns_lock());
     }
     {
-      auto locked = value.try_lock_for(1ms);
-      ASSERT_FALSE(locked.owns_lock());
-    }
-    {
       ASSERT_FALSE(
           value.try_with_until(now() + 1ms, [&out](auto& v) { out += v; }));
+    }
+  });
+  t.join();
+  EXPECT_EQ(out, 2);
+  EXPECT_EQ(*write_locked, 1);
+}
+
+TYPED_TEST(TimedMutexProtectedTest, TimeoutForWorksCorrectly) {
+#ifdef __SANITIZE_THREAD__
+  // Disable TSAN for try_lock_for, which has a known false positive.
+  // https://github.com/llvm/llvm-project/issues/62623
+  // Lots of debugging in
+  // https://github.com/jbcoe/mutex_protected/issues/29
+  // https://github.com/jbcoe/mutex_protected/pull/43
+  GTEST_SKIP()
+      << "Skipping due to known TSAN false positive (llvm/llvm-project#62623)";
+#endif
+
+  mutex_protected<int, TypeParam> value(1);
+  int out = 0;
+  {
+    auto locked = value.try_lock_for(1ms);
+    ASSERT_TRUE(locked.owns_lock());
+    out += *locked;
+  }
+  {
+    ASSERT_TRUE(value.try_with_for(1ms, [&out](auto& v) { out += v; }));
+  }
+  auto write_locked = value.lock();
+  std::thread t([&value, &out]() {
+    {
+      auto locked = value.try_lock_for(1ms);
+      ASSERT_FALSE(locked.owns_lock());
     }
     {
       ASSERT_FALSE(value.try_with_for(1ms, [&out](auto& v) { out += v; }));
     }
   });
   t.join();
-  EXPECT_EQ(out, 4);
+  EXPECT_EQ(out, 2);
   EXPECT_EQ(*write_locked, 1);
 }
 
