@@ -47,4 +47,4 @@ jobs:
               --names-only \
               --exclude_dirs build exploration compile_checks benchmarks)"
           echo $PROJECT_SOURCE_FILES \
-            | xargs clang-tidy -std=cpp23 -warnings-as-errors="*" -p compile_commands.json
+            | xargs clang-tidy -warnings-as-errors="*" -p compile_commands.json
