@@ -36,24 +36,15 @@ jobs:
 
       - name: Install the latest version of uv.
         uses: astral-sh/setup-uv@v5
-      - name: Install Clang
-        uses: egor-tensin/setup-clang@v1
-        with:
-          version: latest
-          platform: x64
-      - name: Install Latest GCC
-        uses: egor-tensin/setup-gcc@v1
-        with:
-          version: latest
-          platform: x64
-      - name: Configure CMake # We need `compile_commands.json` to be generated.
-        run: cmake --preset Release
 
-      - name: clang-tidy
+      - name: Install clang-tidy-19
+        run: sudo apt-get install -y clang-tidy-19
+
+      - name: clang-tidy (v19)
         run: |
           uv run scripts/reduce_compile_commands.py build/compile_commands.json > compile_commands.json
           PROJECT_SOURCE_FILES="$(python scripts/reduce_compile_commands.py build/compile_commands.json \
               --names-only \
               --exclude_dirs build exploration compile_checks benchmarks)"
           echo $PROJECT_SOURCE_FILES \
-            | xargs clang-tidy -warnings-as-errors="*" -p compile_commands.json
+            | xargs clang-tidy-19 -warnings-as-errors="*" -p compile_commands.json
