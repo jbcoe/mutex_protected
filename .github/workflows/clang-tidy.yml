@@ -40,6 +40,9 @@ jobs:
       - name: Install clang-tidy-19
         run: sudo apt-get install -y clang-tidy-19
 
+      - name: Configure CMake # We need `compile_commands.json` to be generated.
+        run: cmake --preset Release
+
       - name: clang-tidy (v19)
         run: |
           uv run scripts/reduce_compile_commands.py build/compile_commands.json > compile_commands.json
