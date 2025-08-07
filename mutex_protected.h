@@ -40,6 +40,7 @@ concept TimedMutex = Mutex<M> && requires(M m) {
 template <class T, class G>
 class [[nodiscard]] mutex_locked {
  public:
+  using value_type = T;
   using mutex_type = G::mutex_type;
 
   T *operator->() const { return v; }
@@ -97,6 +98,9 @@ class [[nodiscard]] mutex_locked {
 template <class T, Mutex M = std::mutex>
 class mutex_protected {
  public:
+  using value_type = T;
+  using mutex_type = M;
+
   template <typename... Args>
   mutex_protected(Args &&...args) : mutex{}, v(std::forward<Args>(args)...) {}
 
@@ -256,17 +260,18 @@ class mutex_protected {
   M mutex;
   T v;
 
-  // Used by `xyz::lock` when locking multiple mutex_protected objects.
+  // Used by `xyz::lock_protected` when locking multiple mutex_protected
+  // objects.
   mutex_locked<T, std::unique_lock<M>> adopt_lock() {
     return mutex_locked<T, std::unique_lock<M>>(&v, mutex, std::adopt_lock);
   }
 
   template <typename... MutexProtected>
-  friend auto lock(MutexProtected &...mp);
+  friend auto lock_protected(MutexProtected &...mp);
 };
 
 template <typename... MutexProtected>
-auto lock(MutexProtected &...mps) {
+auto lock_protected(MutexProtected &...mps) {
   std::lock(mps.mutex...);
   return std::make_tuple(mps.adopt_lock()...);
 }

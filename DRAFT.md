@@ -51,9 +51,20 @@ We review the fundamental design requirements of `mutex_protected`.
 
 # Prior work
 
-Similar implementations exist in
-[Boost](https://www.boost.org/doc/libs/1_81_0/doc/html/thread/sds.html) and
-[Folly](https://github.com/facebook/folly/blob/main/folly/docs/Synchronized.md).
+[P0290R4: apply() for synchronized_value<T>](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2023/p0290r4.html)
+
+Similar implementations for widescale use exist in:
+- [Boost](https://www.boost.org/doc/libs/1_81_0/doc/html/thread/sds.html)
+- [Folly](https://github.com/facebook/folly/blob/main/folly/docs/Synchronized.md)
+
+Smaller implementations, many referenced [here](https://news.ycombinator.com/item?id=35464152)
+- https://awesomekling.github.io/MutexProtected-A-C++-Pattern-for-Easier-Concurrency/
+- https://github.com/alefore/edge/blob/master/src/concurrent/protected.h
+- https://github.com/dragazo/rustex
+- https://fekir.info/post/extend-generic-thread-safe-mutexed_obj-class/
+- https://fekir.info/post/sharing-data-between-threads/#_bind-the-data-and-mutex-together
+- https://github.com/Curve/lockpp
+
 
 # Impact on the standard
 
@@ -181,6 +192,25 @@ between may be more reasonable:
 
 Relative to the first option, this elides `with`, `for` and `until`, while still
 maintaining all the functionality.
+
+### No upgrade locks
+
+Folly supports [upgrade locks](
+https://github.com/facebook/folly/blob/main/folly/docs/Synchronized.md#intro-to-upgrade-mutexes)
+to avoid read or write starvation when using a `std::shared_mutex`.
+
+Boost offers an [upgradable mutex](
+https://www.boost.org/doc/libs/1_59_0/doc/html/interprocess/synchronization_mechanisms.html#interprocess.synchronization_mechanisms.sharable_upgradable_mutexes)
+which would probably work with `mutex_protected`, but only for the standard
+operations. Their [synchronized_value](
+https://www.boost.org/doc/libs/1_81_0/doc/html/thread/sds.html#thread.sds.synchronized_valuesxxx)
+doesn't appear to support the upgrade operations.
+
+We decided to not add upgrade locks since it adds a fair amount of hidden
+overhead in the form of an additional mutex to make the transitions atomic
+and deadlock-proof. If a `std::upgradable_shared_mutex` (or similar) was added
+to the standard library, the upgrade transition methods should also be added
+to `mutex_protected`.
 
 # Reference implementation
 
