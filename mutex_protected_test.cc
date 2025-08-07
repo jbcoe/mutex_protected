@@ -3,6 +3,7 @@
 #include <chrono>
 #include <string>
 #include <thread>
+#include <type_traits>
 #include <vector>
 
 #include "gtest/gtest.h"
@@ -20,6 +21,31 @@ using AllMutexes =
                      std::recursive_timed_mutex, std::shared_mutex,
                      std::shared_timed_mutex>;
 TYPED_TEST_SUITE(MutexProtectedTest, AllMutexes);
+
+TYPED_TEST(MutexProtectedTest, Traits) {
+  static_assert(
+      std::is_same<typename mutex_protected<int, TypeParam>::value_type,
+                   int>::value);
+  static_assert(
+      std::is_same<
+          typename mutex_protected<std::vector<double>, TypeParam>::value_type,
+          std::vector<double>>::value);
+  static_assert(
+      std::is_same<typename mutex_protected<int, TypeParam>::mutex_type,
+                   TypeParam>::value);
+  static_assert(
+      std::is_same<
+          typename mutex_locked<int, std::unique_lock<TypeParam>>::value_type,
+          int>::value);
+  static_assert(std::is_same<
+                typename mutex_locked<std::vector<double>,
+                                      std::unique_lock<TypeParam>>::value_type,
+                std::vector<double>>::value);
+  static_assert(
+      std::is_same<
+          typename mutex_locked<int, std::unique_lock<TypeParam>>::mutex_type,
+          TypeParam>::value);
+}
 
 TYPED_TEST(MutexProtectedTest, InitializedConstruction) {
   mutex_protected<int, TypeParam> value(0);

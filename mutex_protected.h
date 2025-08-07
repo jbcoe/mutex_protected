@@ -41,6 +41,9 @@ concept TimedMutex = Mutex<M> && requires(M m) {
 template <class T, class G>
 class [[nodiscard]] mutex_locked {
  public:
+  using value_type = T;
+  using mutex_type = G::mutex_type;
+
   T *operator->() const { return v; }
 
   T &operator*() const { return *v; }
@@ -82,6 +85,9 @@ class [[nodiscard]] mutex_locked {
 template <class T, Mutex M = std::mutex>
 class mutex_protected {
  public:
+  using value_type = T;
+  using mutex_type = M;
+
   template <typename... Args>
   mutex_protected(Args &&...args) : mutex{}, v(std::forward<Args>(args)...) {}
 

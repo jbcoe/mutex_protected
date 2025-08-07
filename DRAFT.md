@@ -51,9 +51,20 @@ We review the fundamental design requirements of `mutex_protected`.
 
 # Prior work
 
-Similar implementations exist in
-[Boost](https://www.boost.org/doc/libs/1_81_0/doc/html/thread/sds.html) and
-[Folly](https://github.com/facebook/folly/blob/main/folly/docs/Synchronized.md).
+[P0290R4: apply() for synchronized_value<T>](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2023/p0290r4.html)
+
+Similar implementations for widescale use exist in:
+- [Boost](https://www.boost.org/doc/libs/1_81_0/doc/html/thread/sds.html)
+- [Folly](https://github.com/facebook/folly/blob/main/folly/docs/Synchronized.md)
+
+Smaller implementations, many referenced [here](https://news.ycombinator.com/item?id=35464152)
+- https://awesomekling.github.io/MutexProtected-A-C++-Pattern-for-Easier-Concurrency/
+- https://github.com/alefore/edge/blob/master/src/concurrent/protected.h
+- https://github.com/dragazo/rustex
+- https://fekir.info/post/extend-generic-thread-safe-mutexed_obj-class/
+- https://fekir.info/post/sharing-data-between-threads/#_bind-the-data-and-mutex-together
+- https://github.com/Curve/lockpp
+
 
 # Impact on the standard
 
