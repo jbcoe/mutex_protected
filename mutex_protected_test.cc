@@ -1,6 +1,8 @@
 #include "mutex_protected.h"
 
 #include <chrono>
+#include <condition_variable>
+#include <queue>
 #include <string>
 #include <thread>
 #include <type_traits>
@@ -459,6 +461,91 @@ TEST(SharedTimedMutexProtectedTest, TimeoutWorksCorrectly) {
   t.join();
   EXPECT_EQ(out, 4);
   EXPECT_EQ(*write_locked, 1);
+}
+
+TEST(CondVarMutexProtectedTest, ConditionVariableWorks) {
+  mutex_protected<std::queue<int>> inputs;
+  mutex_protected<std::queue<int>> outputs;
+  std::condition_variable in_cv;
+  std::condition_variable out_cv;
+  std::stop_source stop;
+
+  const int items = 100;
+  const int thread_count = 2;
+
+  std::vector<std::thread> threads;
+  threads.reserve(thread_count);
+  for (int i = 0; i < thread_count; ++i) {
+    threads.emplace_back([&]() {
+      while (!stop.stop_requested()) {
+        int value;
+        {
+          auto locked = inputs.lock();
+          in_cv.wait(locked.guard(), [&stop, &locked]() {
+            return stop.stop_requested() || !locked->empty();
+          });
+          if (locked->empty()) {  // Stop requested, exit
+            return;
+          }
+          value = locked->front();
+          locked->pop();
+        }
+        outputs.lock()->push(value);
+        out_cv.notify_one();
+      }
+    });
+  }
+
+  std::this_thread::sleep_for(5ms);
+  int expected_total = 0;
+  for (int i = 0; i < items; ++i) {
+    inputs.with([&i](auto& in_q) { in_q.push(i); });
+    in_cv.notify_one();
+    expected_total += i;
+  }
+
+  int total = 0;
+  for (int i = 0; i < items; ++i) {
+    auto locked = outputs.lock();
+    out_cv.wait(locked.guard(), [&locked]() { return !locked->empty(); });
+    total += locked->front();
+    locked->pop();
+  }
+
+  stop.request_stop();
+  in_cv.notify_all();
+  for (auto& thread : threads) {
+    thread.join();
+  }
+
+  EXPECT_EQ(total, expected_total);
+}
+
+TEST(CondVarMutexProtectedTest, ConditionVariableAnyWorks) {
+  mutex_protected<int, std::shared_mutex> data = 0;
+  std::condition_variable_any cv;
+  mutex_protected<int> out = 0;
+
+  const int thread_count = 2;
+
+  std::vector<std::thread> threads;
+  threads.reserve(thread_count);
+  for (int i = 0; i < thread_count; ++i) {
+    threads.emplace_back([&]() {
+      auto locked = data.lock_shared();
+      cv.wait(*locked.mutex(), [&locked]() { return *locked > 0; });
+      EXPECT_EQ(*locked, 1);
+      *out.lock() += *locked;
+    });
+  }
+
+  std::this_thread::sleep_for(5ms);
+  *data.lock() = 1;
+  cv.notify_all();
+  for (auto& thread : threads) {
+    thread.join();
+  }
+  EXPECT_EQ(*out.lock(), thread_count);
 }
 
 }  // namespace xyz

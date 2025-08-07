@@ -77,6 +77,27 @@ the standard library header `<mutex>`.
 
 ## Choices
 
+### Using `lock_guard` or `unique_lock`
+
+Calling `lock` unconditionally locks the mutex, so intuitively it should return a
+`lock_guard`, which is slightly faster than `unique_lock`, which needs to check if
+the lock is held at destruction. The problem with this is that `lock_guard` is
+incompatible with `condition_variable`, which only accept a `unique_lock`.
+Alternatively we could expose the mutex and force people to use
+`condition_variable_any`, but `lock_guard` doesn't expose `mutex` either. We could
+package an extra reference to the underlying mutex, but that would cost additional
+memory (unless the optimizer removes the unused reference).
+
+It seems returning a `unique_lock` is low enough cost to not be a big deal and
+worth the additional compabitility. If the cost is too high, then you can avoid it
+by using `with` instead of `lock`. Since the guard isn't exposed and therefore
+can't be used with a condition variable `with` uses `lock_guard` for the additional
+speed.
+
+One other minor argument for always using a `unique_lock` is so that the return
+type doesn't change if you switch from `lock` to `try_lock`, where `unique_lock`
+is needed.
+
 ### Explicit or overloaded method names
 
 Is it better to be explicit with all the variants, or use overloads? We've
@@ -93,7 +114,7 @@ though the templates, namespaces, `[[nodiscard]]` and concept constraints have
 been ommited for clarity.
 
 ```c++
-  mutex_locked<T, lock_guard<M>> lock();
+  mutex_locked<T, unique_lock<M>> lock();
   mutex_locked<T, unique_lock<M>> try_lock();
   mutex_locked<T, unique_lock<M>> try_lock_until(const time_point &timeout_time);
   mutex_locked<T, unique_lock<M>> try_lock_for(const duration &timeout_duration);
@@ -122,7 +143,7 @@ The alternative is to use overloads. A potential api is below, with the same
 simplifications as above.
 
 ```c++
-  mutex_locked<T, lock_guard<M>> lock();
+  mutex_locked<T, unique_lock<M>> lock();
   mutex_locked<T, unique_lock<M>> lock(const time_point &timeout_time);
   mutex_locked<T, unique_lock<M>> lock(const duration &timeout_duration);
 
@@ -148,7 +169,7 @@ support `try_lock` on a `std::mutex`. This suggests an alternative in
 between may be more reasonable:
 
 ```c++
-  mutex_locked<T, lock_guard<M>> lock();
+  mutex_locked<T, unique_lock<M>> lock();
   mutex_locked<T, unique_lock<M>> try_lock();
   mutex_locked<T, unique_lock<M>> try_lock(const time_point &timeout_time);
   mutex_locked<T, unique_lock<M>> try_lock(const duration &timeout_duration);
