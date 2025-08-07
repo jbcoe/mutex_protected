@@ -211,6 +211,51 @@ TYPED_TEST(MutexProtectedTest, LockMultiple) {
   }
 }
 
+TYPED_TEST(MutexProtectedTest, TryLockMultiple) {
+  mutex_protected<int, TypeParam> a(1);
+  mutex_protected<int, TypeParam> b(2);
+  {
+    auto r = xyz::try_lock_protected(a, b);
+    ASSERT_TRUE(r.has_value());
+
+    auto& [la, lb] = r.value();
+    EXPECT_EQ(*la, 1);
+    EXPECT_EQ(*lb, 2);
+    *la += 10;
+    *lb += 10;
+  }
+  {
+    auto r = xyz::try_lock_protected(a, b);
+    ASSERT_TRUE(r.has_value());
+    auto& [la, lb] = r.value();
+    EXPECT_EQ(*la, 11);
+    EXPECT_EQ(*lb, 12);
+  }
+  {
+    auto la = a.lock();
+    std::thread t([&]() {  // Needed due to recursive locks.
+      auto r = xyz::try_lock_protected(a, b);
+      ASSERT_FALSE(r.has_value());
+      EXPECT_EQ(r.error(), 0);
+    });
+    t.join();
+  }
+  {
+    auto lb = b.lock();
+    std::thread t([&]() {  // Needed due to recursive locks.
+      auto r = xyz::try_lock_protected(a, b);
+      ASSERT_FALSE(r.has_value());
+      EXPECT_EQ(r.error(), 1);
+    });
+    t.join();
+  }
+  {
+    auto [lb, la] = xyz::lock_protected(b, a);
+    EXPECT_EQ(*la, 11);
+    EXPECT_EQ(*lb, 12);
+  }
+}
+
 template <typename T>
 class SharedMutexProtectedTest : public testing::Test {};
 
@@ -316,8 +361,8 @@ TYPED_TEST(SharedMutexProtectedTest, ThreadSafetyCorrectness) {
   }
   EXPECT_EQ(*value.lock(), writers * iters);
 
-  // Hopefully this stops things from being optimized away, but I don't see how
-  // this could fail.
+  // Hopefully this stops things from being optimized away, but I don't see
+  // how this could fail.
   EXPECT_LE(*grand_total.lock(), (long long)readers * writers * iters * iters);
 }
 

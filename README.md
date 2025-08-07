@@ -229,6 +229,32 @@ mutex_protected<int, std::shared_mutex> value;
 
 ### Locking multiple mutexes simultaneously
 
+If you have multiple mutexes that you want to lock, you need to be careful to
+avoid deadlocks that can happen if different threads lock them in a different
+order. The solution is to lock them in the same order, which is best delegated
+to `std::lock`, `std::try_lock` or `std::scoped_lock`, but those only work on
+true mutexes. We want to return multiple guards, so supply `lock_protected` and
+`try_lock_protected` for `mutex_protected` objects.
+
+```cpp
+mutex_protected<int> a(1);
+mutex_protected<int> b(2);
+
+auto [lb, la] = xyz::lock_protected(b, a);
+*la += *lb;
+```
+
+```cpp
+auto r = xyz::try_lock_protected(a, b);
+if (r.has_value()) {
+  auto& [la, lb] = r.value();
+  *la += *lb;
+} else {
+  assert(r.has_error());
+  // r.error() tells you which lock was contended.
+}
+```
+
 ## License
 
 This code is licensed under the MIT License. See [LICENSE](LICENSE) for details.

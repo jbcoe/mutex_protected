@@ -3,6 +3,7 @@
 
 #include <chrono>
 #include <concepts>
+#include <expected>
 #include <mutex>
 #include <shared_mutex>
 #include <thread>
@@ -244,20 +245,38 @@ class mutex_protected {
   M mutex;
   T v;
 
-  // Used by `xyz::lock_protected` when locking multiple mutex_protected
-  // objects.
+  // Used by `xyz::lock_protected` and `xyz::try_lock_protected` when locking
+  // multiple mutex_protected objects.
   mutex_locked<T, std::unique_lock<M>> adopt_lock() {
     return mutex_locked<T, std::unique_lock<M>>(&v, mutex, std::adopt_lock);
   }
 
   template <typename... MutexProtected>
   friend auto lock_protected(MutexProtected &...mp);
+
+  template <typename... MutexProtected>
+  friend auto try_lock_protected(MutexProtected &...mps)
+      -> std::expected<std::tuple<decltype(mps.adopt_lock())...>, int>;
 };
 
 template <typename... MutexProtected>
 auto lock_protected(MutexProtected &...mps) {
   std::lock(mps.mutex...);
   return std::make_tuple(mps.adopt_lock()...);
+}
+
+template <typename... MutexProtected>
+auto try_lock_protected(MutexProtected &...mps)
+    -> std::expected<std::tuple<decltype(mps.adopt_lock())...>, int> {
+  int r = std::try_lock(mps.mutex...);
+  if (r >= 0) {
+    return std::expected<std::tuple<decltype(mps.adopt_lock())...>, int>(
+        std::unexpect, r);
+
+  } else {
+    return std::expected<std::tuple<decltype(mps.adopt_lock())...>, int>(
+        std::in_place, mps.adopt_lock()...);
+  }
 }
 
 }  // namespace xyz
